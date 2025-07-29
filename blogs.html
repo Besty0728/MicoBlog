@@ -1,0 +1,3493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+<head>
+    <meta charset="UTF-8">
+    <title>个人博客 - 流转星</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <script>
+        (async function () {
+            // 这是您唯一需要修改的部分，将API_BASE_URL替换为您的后端API地址记得加后缀/api
+            window.API_BASE_URL = 'https://api.example.com/api';
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/settings`);
+                const settings = await response.json();
+
+                const validationMode = parseInt(settings.turnstile_validation_mode ?? 2);
+
+                // 如果验证模式为0，直接跳过
+                if (validationMode === 0) {
+
+                    const overlay = document.getElementById('turnstile-overlay');
+                    if (overlay) overlay.remove();
+                    // 显示主内容
+                    const mainContent = document.getElementById('main-content');
+                    if (mainContent) mainContent.style.display = 'block';
+                    // 加载资源
+                    if (typeof loadDelayedResources === 'function') loadDelayedResources();
+                    return;
+                }
+
+                // 只有在需要验证时才继续
+                if (settings.CLOUDFLARE_SITE_KEY) {
+                    // 等待 turnstile 对象可用
+                    function renderTurnstile() {
+                        if (typeof turnstile !== 'undefined') {
+                            turnstile.render('#turnstile-widget', {
+                                sitekey: settings.CLOUDFLARE_SITE_KEY,
+                                callback: function (token) {
+                                    window.onTurnstileSuccess(token);
+                                },
+                                theme: 'dark',
+                            });
+                        } else {
+                            // 如果 turnstile 还不可用，等50毫秒再试一次
+                            setTimeout(renderTurnstile, 50);
+                        }
+                    }
+                    // 立即开始尝试渲染
+                    renderTurnstile();
+                } else {
+                    console.error('Turnstile Site Key 未在后端配置。');
+                    const widgetContainer = document.getElementById('turnstile-widget');
+                    if (widgetContainer) widgetContainer.innerHTML = '<p style="color: #ff6b6b;">错误：网站未配置安全密钥</p>';
+                }
+
+            } catch (e) {
+                console.error('预检查失败，保留Turnstile:', e);
+            }
+        })();
+    </script>
+    <style>
+        /* --- 1. General Setup & Font --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'MapleMono NF CN';
+            /* 这里的话来配置您的字体 */
+            src: url('fonts/MapleMono-NF-CN-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        body {
+            font-family: 'MapleMono NF CN', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace, sans-serif;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+            transition: all 0.5s ease;
+            font-size: 15px;
+            letter-spacing: -0.02em;
+            -webkit-font-smoothing: antialiased;
+            /* 优化字体渲染 */
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- 2. Background & Overlays --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            z-index: -2;
+            transition: filter 0.5s ease, background-image 1s ease;
+        }
+
+        body.resources-loaded::before {
+            /* 背景路径 */
+            background-image: url('images/zhuiming.png');
+        }
+
+        /* 13.14%黑色遮罩 */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1314);
+            z-index: -1;
+        }
+
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        /* --- 3. Dark Mode Styles --- */
+        body.dark-mode {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode::before {
+            filter: brightness(0.3) contrast(1.2);
+        }
+
+        body.dark-mode::after {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        body.dark-mode .profile-card,
+        body.dark-mode .info-card,
+        body.dark-mode .animation-section,
+        body.dark-mode .tab,
+        body.dark-mode .project-card,
+        body.dark-mode .skill-item,
+        body.dark-mode .blog-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-mode .tab.active {
+            background: rgba(93, 213, 255, 0.15);
+        }
+
+        body.dark-mode #animationCanvas {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        body.dark-mode .particle {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        body.dark-mode .info-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode .tab:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode .project-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode .skill-item:hover {
+            background: rgba(93, 213, 255, 0.15);
+        }
+
+        body.dark-mode .blog-card:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode .search-input {
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .search-input:focus {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- 4. Keyframe Animations --- */
+        @keyframes float {
+            from {
+                transform: translateY(100vh) translateX(0);
+            }
+
+            to {
+                transform: translateY(-100px) translateX(100px);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes avatarRipple {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes waveFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes clickAnimation {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* --- 5. Layout & Helper Classes --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Enhanced Glass Morphism Effect for all modules */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(1.314px);
+            -webkit-backdrop-filter: blur(1.314px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Apply glass effect to all card elements */
+        .profile-card,
+        .info-card,
+        .animation-section,
+        .tab,
+        .project-card,
+        .skill-item,
+        .blog-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(1.314px);
+            -webkit-backdrop-filter: blur(1.314px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- 6. Component: Profile Section --- */
+        .profile-card {
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            animation: slideIn 0.6s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            transform: rotate(45deg);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .profile-card:hover::before {
+            opacity: 1;
+        }
+
+        .avatar-container {
+            position: relative;
+            padding-bottom: 40px;
+            /* 为下方图标留出空间 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-image: url('images/avatar.jpg');
+            /* 你的头像路径 */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            user-select: none;
+            overflow: hidden;
+            /* 确保图片不溢出 */
+            overflow: visible !important;
+            /* 确保溢出内容可见 */
+        }
+
+        .avatar:hover {
+            transform: scale(1.05) rotate(5deg);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar:active {
+            transform: scale(0.95) rotate(-5deg);
+        }
+
+        .avatar::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            animation: avatarRipple 2s infinite;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .mode-indicator {
+            position: absolute;
+            top: 140px;
+            left: 20%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            opacity: 1 !important;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+            pointer-events: none;
+            background: transparent;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-indicator::before {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            line-height: 35px;
+        }
+
+        .avatar:hover .mode-indicator {
+            opacity: 1;
+        }
+
+        body.dark-mode .mode-indicator::before {
+            content: '🌙';
+        }
+
+        body:not(.dark-mode) .mode-indicator::before {
+            content: '☀️';
+        }
+
+        .decorative-icons {
+            position: absolute;
+            top: -20px;
+            right: -25px;
+            font-size: 40px;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            z-index: 2;
+        }
+
+        .decorative-icons.playing {
+            animation: bounce 2s infinite, rotate 3s linear infinite;
+            color: #5dd5ff;
+            filter: drop-shadow(0 0 10px rgba(93, 213, 255, 0.8));
+        }
+
+        .profile-info h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .profile-info h1 .name-wrapper {
+            font-style: italic;
+            display: inline-flex;
+            position: relative;
+        }
+
+        .profile-info h1 .char {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            background: linear-gradient(60deg, #fc00ff 0%, #00dbde 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #fc00ff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .name-wrapper.music-floating .char {
+            animation: waveFloat 1.5s ease-in-out infinite;
+        }
+
+        .name-wrapper.music-floating .char:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .name-wrapper.music-floating .char:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .name-wrapper.music-floating .char:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .profile-info h1:hover .char {
+            animation: none;
+            transform: translateY(-5px);
+            text-shadow: 0 5px 10px rgba(93, 213, 255, 0.5);
+        }
+
+        body.dark-mode .profile-info h1 .char {
+            background: linear-gradient(90deg, #84fab0 0%, #8fd3f4 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #8fd3f4;
+        }
+
+        /* --- 为"流转星"设置黑夜模式（极光文字）效果 --- */
+        body.dark-mode .profile-info h1 span {
+            background: linear-gradient(90deg, #84fab0 0%, #8fd3f4 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #8fd3f4;
+        }
+
+        .role {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .motto {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(1.314px);
+            -webkit-backdrop-filter: blur(1.314px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-link img {
+            width: 60%;
+            height: 60%;
+            object-fit: contain;
+        }
+
+        .social-link::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .social-link:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px) rotate(360deg);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .social-link:active {
+            transform: scale(0.9);
+        }
+
+        /* --- 7. Component: Info Cards --- */
+        .info-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .info-card {
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: radial-gradient(circle, rgba(93, 213, 255, 0.3) 0%, transparent 70%);
+            transition: all 0.5s ease;
+            transform: scale(0);
+        }
+
+        .info-card:hover::before {
+            transform: scale(1);
+            top: -150%;
+            left: -150%;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .info-card:active {
+            transform: translateY(-2px) scale(0.98);
+            transition: all 0.1s ease;
+        }
+
+        /* --- 8. Component: Snake Animation Section --- */
+        .animation-section {
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .animation-title {
+            margin-bottom: 10px;
+            font-size: 18px;
+            opacity: 0.9;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #animationCanvas {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(1.314px);
+            -webkit-backdrop-filter: blur(1.314px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #animationCanvas:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            transform: scale(1.01);
+        }
+
+        /* --- 9. Component: Section Tabs & Content --- */
+        .section-tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: #5dd5ff;
+            transition: width 0.3s ease;
+        }
+
+        .tab:hover::before {
+            width: 100%;
+        }
+
+        .tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .tab:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .tab.active {
+            background: rgba(93, 213, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(93, 213, 255, 0.3);
+        }
+
+        .tab.active::before {
+            width: 100%;
+        }
+
+        .tab-icon {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .tab:hover .tab-icon {
+            transform: rotate(20deg) scale(1.1);
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* --- 10. Component: Project & Skills Grids --- */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(93, 213, 255, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.6s ease;
+        }
+
+        .project-card:hover::after {
+            width: 300%;
+            height: 300%;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .project-card:active {
+            transform: translateY(-2px) rotate(0deg) scale(0.98);
+            transition: all 0.1s ease;
+        }
+
+        .project-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .project-card:hover .project-icon {
+            transform: scale(1.2) rotate(10deg);
+            filter: drop-shadow(0 5px 10px rgba(93, 213, 255, 0.5));
+        }
+
+        .project-card h3 {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .skill-item {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .skill-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(93, 213, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .skill-item:hover::before {
+            left: 100%;
+        }
+
+        .skill-item:hover {
+            transform: scale(1.05) rotate(-2deg);
+            background: rgba(93, 213, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(93, 213, 255, 0.3);
+        }
+
+        .skill-item:active {
+            transform: scale(0.95) rotate(0deg);
+        }
+
+        /* --- 11. Component: Blog Section --- */
+        .blog-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .blog-card {
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 35px 40px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .blog-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(93, 213, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .blog-card:hover::before {
+            left: 100%;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .blog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .blog-date {
+            color: #5dd5ff;
+        }
+
+        .blog-category {
+            background: rgba(93, 213, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .blog-title {
+            font-size: 24px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .blog-excerpt {
+            font-size: 16px;
+            line-height: 1.8;
+            opacity: 0.9;
+            margin-bottom: 25px;
+            text-align: justify;
+            min-height: 80px;
+        }
+
+        .blog-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .read-more {
+            color: #5dd5ff;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .blog-card:hover .read-more {
+            transform: translateX(5px);
+        }
+
+        .blog-stats {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* 博客操作区域 */
+        .blog-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .share-btn {
+            cursor: pointer;
+            color: #5dd5ff;
+            transition: all 0.3s ease;
+        }
+
+        .share-btn:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        /* 复制成功提示 */
+        .share-toast {
+            position: fixed;
+            top: 50px;
+            right: 50px;
+            background: rgba(93, 213, 255, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* --- 12. Component: Search --- */
+        .search-card {
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto 30px;
+            padding: 25px 30px;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .search-icon {
+            font-size: 24px;
+            opacity: 0.7;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            color: #fff;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #5dd5ff;
+            box-shadow: 0 0 20px rgba(93, 213, 255, 0.3);
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .search-clear:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .search-results-info {
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.8;
+            color: #5dd5ff;
+        }
+
+        .blog-card.search-hidden {
+            display: none;
+        }
+
+        .no-results-message {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+
+        /* --- 13. Component: Blog Viewer --- */
+        .blog-viewer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            padding: 20px;
+        }
+
+        .blog-viewer-overlay.visible {
+            opacity: 1;
+        }
+
+        .blog-viewer-content {
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 40px;
+            position: relative;
+            cursor: default;
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.5s ease, background-image 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+            border-radius: 20px;
+        }
+
+        .blog-viewer-overlay.visible .blog-viewer-content {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Viewer Day Mode */
+        .blog-viewer-content {
+            background: linear-gradient(135deg, rgba(255, 235, 238, 0.98) 0%, rgba(230, 240, 255, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: #3d3a5b;
+            box-shadow: 0 12px 45px rgba(108, 99, 255, 0.1);
+        }
+
+        .viewer-title {
+            background: linear-gradient(45deg, #d24d93, #4a69bd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            font-size: 32px;
+            margin-bottom: 10px;
+            transition: color 0.5s ease, text-shadow 0.5s ease;
+        }
+
+        .viewer-meta {
+            opacity: 0.6;
+            font-size: 14px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            transition: opacity 0.5s ease;
+        }
+
+        .viewer-body {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .viewer-body p {
+            margin-bottom: 1.2em;
+        }
+
+        .viewer-body h4 {
+            color: #4a69bd;
+            border-left: 4px solid #8e82ff;
+            font-size: 20px;
+            margin-top: 1.8em;
+            margin-bottom: 1em;
+            padding-left: 12px;
+            transition: color 0.5s ease, border-color 0.5s ease;
+        }
+
+        .viewer-body pre {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5em 0;
+            transition: background 0.5s ease, border-color 0.5s ease;
+        }
+
+        .viewer-body code {
+            color: #3d3a5b;
+            font-family: 'MapleMono NF CN', monospace;
+            font-size: 14px;
+            transition: color 0.5s ease;
+        }
+
+        .close-viewer,
+        .viewer-mode-toggle {
+            color: #8282a2;
+        }
+
+        .close-viewer:hover,
+        .viewer-mode-toggle:hover {
+            color: #4a69bd;
+        }
+
+        /* Viewer Dark Mode */
+        body.dark-mode .blog-viewer-content {
+            background: rgba(20, 20, 30, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .viewer-title {
+            background: linear-gradient(90deg, #84fab0 0%, #8fd3f4 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 8px rgba(143, 211, 244, 0.3);
+        }
+
+        body.dark-mode .viewer-meta {
+            opacity: 0.8;
+        }
+
+        body.dark-mode .viewer-body h4 {
+            color: #fff;
+            border-left-color: #5dd5ff;
+        }
+
+        body.dark-mode .viewer-body pre {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-mode .viewer-body code {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .close-viewer {
+            color: #fff;
+        }
+
+        body.dark-mode .close-viewer:hover {
+            color: #5dd5ff;
+        }
+
+        /* Viewer Controls */
+        .close-viewer {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 36px;
+            cursor: pointer;
+            transition: transform 0.3s ease, color 0.3s ease;
+            line-height: 1;
+            z-index: 10;
+        }
+
+        .close-viewer:hover {
+            transform: rotate(90deg);
+        }
+
+        .viewer-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 65px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            z-index: 10;
+        }
+
+        .viewer-mode-toggle:hover {
+            transform: scale(1.2) rotate(15deg);
+        }
+
+        .viewer-mode-toggle::before {
+            content: '🌙';
+            /* 日间模式下，显示月亮图标 */
+        }
+
+        body.dark-mode .viewer-mode-toggle::before {
+            content: '☀️';
+            /* 黑夜模式下，显示太阳图标 */
+        }
+
+        /* Viewer Scrollbar */
+        .blog-viewer-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .blog-viewer-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .blog-viewer-content::-webkit-scrollbar-thumb {
+            background-color: rgba(93, 213, 255, 0.5);
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+            transition: background-color 0.3s ease;
+        }
+
+        .blog-viewer-content::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(93, 213, 255, 0.8);
+        }
+
+        .blog-viewer-content {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(93, 213, 255, 0.8) transparent;
+        }
+
+        /* --- 14. UI Helpers & Misc --- */
+        .mode-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 2100;
+        }
+
+        .mode-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .clicked {
+            animation: clickAnimation 0.3s ease-out;
+        }
+
+        body.viewer-open {
+            overflow: hidden;
+        }
+
+        /* --- 15. Responsive Design --- */
+        @media (max-width: 768px) {
+            .profile-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-info h1 {
+                font-size: 36px;
+            }
+
+            #animationCanvas {
+                width: 100% !important;
+                max-width: 400px;
+            }
+
+            .blog-card {
+                padding: 20px;
+            }
+
+            .blog-title {
+                font-size: 20px;
+            }
+
+            .blog-excerpt {
+                font-size: 14px;
+            }
+
+            .viewer-title {
+                font-size: 24px;
+            }
+
+            .blog-viewer-content {
+                padding: 25px;
+            }
+        }
+
+        /* --- 16. Component: Comments --- */
+        .comments-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(1.314px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .comments-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .comments-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .comments-count {
+            color: #5dd5ff;
+        }
+
+        .comment-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .comment-form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .comment-form-group {
+            flex: 1;
+        }
+
+        .comment-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .comment-form input,
+        .comment-form textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #17191a;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .comment-form input,
+        body.dark-mode .comment-form textarea {
+            color: #fff;
+            /* 黑夜模式使用白色文字 */
+        }
+
+        /* 占位符文字颜色 */
+        .comment-form input::placeholder,
+        .comment-form textarea::placeholder {
+            color: rgba(44, 62, 80, 0.5);
+            /* 深色半透明 */
+        }
+
+        body.dark-mode .comment-form input::placeholder,
+        body.dark-mode .comment-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            /* 白色半透明 */
+        }
+
+        .comment-form input:focus,
+        .comment-form textarea:focus {
+            outline: none;
+            border-color: #5dd5ff;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .comment-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .comment-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .comment-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .comments-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .comment-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .comment-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .comment-author {
+            font-weight: bold;
+            color: #5dd5ff;
+        }
+
+        .comment-time {
+            font-size: 14px;
+            opacity: 0.6;
+        }
+
+        .comment-content {
+            line-height: 1.6;
+        }
+
+        .no-comments {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.6;
+        }
+
+        /* 黑夜模式评论样式 */
+        body.dark-mode .comment-form {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .comment-form input,
+        body.dark-mode .comment-form textarea {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        body.dark-mode .comment-item {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .comment-item:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* 所有者评论特殊样式 */
+        .comment-item.owner-comment {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .comment-author.owner {
+            color: #5dd5ff;
+            font-weight: bold;
+        }
+
+        .owner-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 8px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.5px;
+        }
+
+        /* 黑夜模式下的所有者样式 */
+        body.dark-mode .comment-item.owner-comment {
+            background: linear-gradient(135deg, rgba(93, 213, 255, 0.1) 0%, rgba(143, 211, 244, 0.1) 100%);
+            border: 1px solid rgba(93, 213, 255, 0.3);
+        }
+
+        body.dark-mode .comment-author.owner {
+            color: #84fab0;
+            /* 黑夜模式下的浅绿色 */
+        }
+
+        body.dark-mode .owner-badge {
+            background: linear-gradient(90deg, #84fab0 0%, #8fd3f4 100%);
+            color: #242424;
+        }
+
+        /* --- 17. Component: Turnstile Entry Gate --- */
+        #turnstile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(10, 10, 20, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #turnstile-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .turnstile-container {
+            text-align: center;
+            color: #fff;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .turnstile-container h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: normal;
+        }
+
+        /* AI日报样式 */
+        .ai-reports-container {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .ai-reports-main {
+            flex: 0 0 70%;
+        }
+
+        .ai-reports-timeline {
+            flex: 0 0 28%;
+        }
+
+        .ai-report-card {
+            width: 100%;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-report-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(93, 213, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .ai-report-card:hover::before {
+            left: 100%;
+        }
+
+        .ai-report-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .ai-report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .ai-report-date {
+            color: #5dd5ff;
+            font-weight: 500;
+        }
+
+        .ai-report-highlights {
+            background: rgba(93, 213, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .ai-report-title {
+            font-size: 22px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-report-summary {
+            font-size: 16px;
+            line-height: 1.8;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+
+        .ai-report-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .read-report {
+            color: #5dd5ff;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .ai-report-card:hover .read-report {
+            transform: translateX(5px);
+        }
+
+        /* 时间线样式 */
+        .timeline-card {
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .timeline-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+        }
+
+        .timeline-item:hover {
+            background: rgba(93, 213, 255, 0.1);
+        }
+
+        .timeline-item.active {
+            background: rgba(93, 213, 255, 0.2);
+            color: #5dd5ff;
+        }
+
+        .timeline-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #5dd5ff;
+            margin-right: 12px;
+        }
+
+        .timeline-dot.inactive {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .timeline-stats {
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .stats-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* AI日报查看器样式 */
+        .ai-report-content {
+            line-height: 1.8;
+        }
+
+        .ai-report-content h3 {
+            color: #5dd5ff;
+            margin: 25px 0 15px 0;
+            font-size: 18px;
+            border-left: 4px solid #5dd5ff;
+            padding-left: 12px;
+        }
+
+        .ai-report-content .news-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .ai-report-content .news-item h4 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .ai-report-content .news-source a {
+            color: #5dd5ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .ai-report-content .news-source a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .ai-reports-container {
+                flex-direction: column;
+            }
+
+            .ai-reports-main,
+            .ai-reports-timeline {
+                flex: none;
+                width: 100%;
+            }
+
+            .ai-report-title {
+                font-size: 20px;
+            }
+
+            .ai-report-summary {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Turnstile 验证遮罩层 -->
+    <div id="turnstile-overlay">
+        <div class="turnstile-container">
+            <h2>检查是否进行安全验证...</h2>
+            <div id="turnstile-widget"></div>
+        </div>
+    </div>
+
+    <!-- 将所有原始内容包裹起来并隐藏 -->
+    <main id="main-content" style="display: none;">
+        <!-- Background particles -->
+        <div class="bg-particles" id="particles"></div>
+        <!-- Background Music -->
+        <audio id="bgMusic" loop data-src-mp3="music/background.mp3" data-src-ogg="music/background.ogg"
+            data-src-flac="music/background.flac">
+
+        </audio>
+
+        <div class="container">
+            <!-- Profile Section -->
+            <div class="profile-card glass-card">
+                <div class="avatar-container">
+                    <div class="avatar"></div>
+                    <div class="decorative-icons">🎶</div>
+                </div>
+                <div class="profile-info">
+                    <h1>你好，我是<span class="name-wrapper"><span class="char">流</span><span class="char">转</span><span
+                                class="char">星</span></span></h1>
+                    <div class="role">👨‍💻 Unity个人开发者</div>
+                    <div class="motto">📚 爱我宝宝，用心去对待事情</div>
+                    <div class="social-links">
+                        <a href="https://github.com/Besty0728" target="_blank" class="social-link" title="GitHub">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12" />
+                            </svg>
+                        </a>
+                        <a href="mailto:a2120060205@icloud.com" target="_blank" class="social-link"
+                            title="Email:a2120060205@icloud.com">📧</a>
+                        <a href="https://space.bilibili.com/420378171" target="_blank" class="social-link"
+                            title="Bilibili">
+                            <img src="images/bilibili.png" alt="Bilibili Icon">
+                        </a>
+                        <a href="https://ditu.amap.com" target="_blank" class="social-link" title="高德地图">📍</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="info-cards-container">
+                <div class="info-card glass-card">
+                    <div>📍 中国山东</div>
+                    <div>🏢 泰安</div>
+                </div>
+                <div class="info-card glass-card">
+                    <div>⌨️ 手速一般,AI大王 </div>
+                    <div>🖥️ Windows/Linux</div>
+                </div>
+                <div class="info-card glass-card">
+                    <div>🎧 爱听双J、邓紫棋、孙燕姿...</div>
+                    <div>🎵 珊瑚海、倒带、多远都要在一起、我怀念的...</div>
+                </div>
+            </div>
+
+            <!-- Auto Snake Animation Section -->
+            <div class="animation-section glass-card">
+                <h3 class="animation-title">🐍 无聊就放松一下吧,内容图片加载缓慢请稍后</h3>
+                <canvas id="animationCanvas" width="800" height="300"></canvas>
+            </div>
+
+            <!-- Section Tabs -->
+            <div class="section-tabs">
+                <div class="tab glass-card active" onclick="switchTab('site')">
+                    <span class="tab-icon">🏠</span>
+                    <span>网站主页</span>
+                </div>
+                <div class="tab glass-card" onclick="switchTab('projects')">
+                    <span class="tab-icon">📦</span>
+                    <span>项目</span>
+                </div>
+                <div class="tab glass-card" onclick="switchTab('resourcesharing')">
+                    <span class="tab-icon">🚀</span>
+                    <span>资源分享</span>
+                </div>
+                <div class="tab glass-card" onclick="switchTab('skills')">
+                    <span class="tab-icon">⚡</span>
+                    <span>涉及知识</span>
+                </div>
+                <div class="tab glass-card" onclick="switchTab('ai-reports')">
+                    <span class="tab-icon">🤖</span>
+                    <span>AI日报</span>
+                </div>
+            </div>
+
+            <!-- Content Sections -->
+            <div id="site" class="content-section active">
+                <div class="project-grid">
+
+                </div>
+            </div>
+
+            <div id="projects" class="content-section">
+                <!-- Search Box Card -->
+                <div class="search-card glass-card">
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="搜索项目标题...">
+                        <span class="search-clear" style="display: none;">✕</span>
+                    </div>
+                    <div class="search-results-info" style="display: none;">
+                        找到 <span class="results-count">0</span> 篇相关文章
+                    </div>
+                </div>
+                <div class="blog-container">
+
+                </div>
+            </div>
+
+            <!-- AI日报内容区域（约第1250行） -->
+            <div id="ai-reports" class="content-section">
+                <div class="ai-reports-container">
+                    <!-- 左侧：日报列表 -->
+                    <div class="ai-reports-main">
+                        <div class="search-card glass-card">
+                            <div class="search-container">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" class="search-input" placeholder="搜索AI日报内容...">
+                                <span class="search-clear" style="display: none;">✕</span>
+                            </div>
+                            <div class="search-results-info" style="display: none;">
+                                找到 <span class="results-count">0</span> 期相关日报
+                            </div>
+                        </div>
+
+                        <div class="ai-reports-list" id="aiReportsList">
+                            <p style="text-align: center; opacity: 0.6;">正在加载AI日报...</p>
+                        </div>
+
+                        <div class="load-more-container" style="text-align: center; margin-top: 20px;">
+                            <button class="load-more-btn glass-card" onclick="loadMoreReports()" style="display: none;">
+                                加载更多日报
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：时间线 -->
+                    <div class="ai-reports-timeline">
+                        <div class="timeline-card glass-card">
+                            <h3 style="margin-bottom: 15px;">📅 最近日报</h3>
+                            <div class="timeline-list" id="reportsTimeline">
+                                <p style="opacity: 0.6;">加载中...</p>
+                            </div>
+                        </div>
+
+                        <div class="timeline-stats glass-card" style="margin-top: 20px;">
+                            <h4 style="margin-bottom: 10px;">📊 统计信息</h4>
+                            <div class="stats-item">总计: <span id="totalReports">0</span>期</div>
+                            <div class="stats-item">本月: <span id="monthlyReports">0</span>期</div>
+                            <div class="stats-item">最新: <span id="latestDate">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="resourcesharing" class="content-section">
+                <div class="project-grid">
+
+                </div>
+            </div>
+
+            <div id="skills" class="content-section">
+                <div class="skills-grid">
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!--Turnstile 成功回调脚本 -->
+    <script>
+        const API_BASE = window.API_BASE_URL;
+        if (!API_BASE) {
+            console.error('API_BASE 未定义，请确保在页面加载前设置了 API_BASE 变量');
+        }
+        function loadDelayedResources() {
+            //console.log('Loading delayed resources...');
+            document.body.classList.add('resources-loaded');
+
+            const bgMusic = document.getElementById('bgMusic');
+            if (bgMusic) {
+                const mp3Src = bgMusic.getAttribute('data-src-mp3');
+                if (mp3Src) {
+                    const sourceMp3 = document.createElement('source');
+                    sourceMp3.src = mp3Src;
+                    sourceMp3.type = 'audio/mpeg';
+                    bgMusic.appendChild(sourceMp3);
+                }
+                bgMusic.load();
+            }
+
+            const fontStyle = document.createElement('style');
+            fontStyle.textContent = `
+        @font-face {
+            font-family: 'MapleMono NF CN';
+            src: url('fonts/MapleMono-NF-CN-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    `;
+            document.head.appendChild(fontStyle);
+            console.log('字体和资源加载完成');
+        }
+
+        async function onTurnstileSuccess(token) {
+            if (window.currentValidationMode === 0) {
+                console.log('验证已关闭，忽略Turnstile回调');
+                return;
+            }
+            //console.log('Turnstile验证完成，处理中...');
+            const overlay = document.getElementById('turnstile-overlay');
+            const statusText = overlay.querySelector('h2');
+
+            if (statusText) {
+                statusText.textContent = '验证成功，正在加载内容...';
+            }
+
+            try {
+                // 根据验证模式决定是否调用后端验证
+                const validationMode = parseInt(window.currentValidationMode) || 2;
+                console.log('当前验证模式:', validationMode);
+
+                if (validationMode === 1) {
+                    // 弱验证：前端验证通过即可
+                    //console.log('弱验证模式，直接通过');
+                    const mainContent = document.getElementById('main-content');
+                    loadDelayedResources();
+                    overlay.classList.add('hidden');
+                    mainContent.style.display = 'block';
+                    return;
+                }
+
+                // 强验证：需要后端验证
+                const response = await fetch(`${API_BASE}/verify-entry`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 'cf-turnstile-response': token }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    //console.log('强验证通过');
+                    const mainContent = document.getElementById('main-content');
+                    loadDelayedResources();
+                    overlay.classList.add('hidden');
+                    mainContent.style.display = 'block';
+                } else {
+                    console.error('强验证失败:', result.message);
+                    if (statusText) {
+                        statusText.textContent = '验证失败，请刷新页面重试';
+                    }
+                }
+            } catch (error) {
+                console.error('验证过程出错:', error);
+                if (statusText) {
+                    statusText.textContent = '网络错误，请刷新页面重试';
+                }
+            }
+        }
+        const BACKEND_DOMAIN = new URL(API_BASE).origin;
+
+        // --- 1. Global State & Core Functions ---
+        let darkMode = localStorage.getItem('darkMode') === 'true';
+
+        // Function to fix content URLs
+        function fixContentUrls(content) {
+            if (!content) return content;
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+
+            const images = tempDiv.querySelectorAll('img');
+            images.forEach(img => {
+                const src = img.getAttribute('src');
+                //这里是你前端用到的图像的路径
+                if (src && src.includes('/uploads/images/')) {
+                    img.setAttribute('src', src.replace(/^.*\/uploads\/images\//, `${BACKEND_DOMAIN}/uploads/images/`));
+                }
+            });
+
+            return tempDiv.innerHTML;
+        }
+
+        // Create blog card function
+        function createBlogCard(project) {
+            const card = document.createElement('div');
+            card.className = 'blog-card glass-card';
+            card.dataset.projectId = project.id; // 添加项目ID
+
+            const fixedContent = fixContentUrls(project.content);
+            const fixedExcerpt = fixContentUrls(project.excerpt);
+
+            card.innerHTML = `
+                <div class="blog-header">
+                    <span class="blog-date">📅 ${new Date(project.created_at).toLocaleDateString('zh-CN')}</span>
+                    <span class="blog-category">${project.category}</span>
+                </div>
+                <h2 class="blog-title">${project.title}</h2>
+                <div class="blog-excerpt">${fixedExcerpt}</div>
+                <div class="blog-full-content" style="display: none;">${fixedContent}</div>
+                <div class="blog-footer">
+                    <span class="read-more">阅读全文 →</span>
+                    <div class="blog-actions">
+                        <span class="blog-stats">👁 ${project.views || 0} 💬 ${project.comments || 0}</span>
+                        <span class="share-btn" onclick="copyProjectLink(event, ${project.id})">📋 复制链接</span>
+                    </div>
+                </div>
+            `;
+
+            card.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('share-btn')) {
+                    openBlogViewer(card);
+                }
+            });
+            return card;
+        }
+
+        // Unified dark mode toggle function
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            localStorage.setItem('darkMode', darkMode);
+            const modeToast = document.querySelector('.mode-toast');
+            if (modeToast) {
+                modeToast.textContent = darkMode ? '🌙 黑夜模式已开启' : '☀️ 日间模式已开启';
+                modeToast.classList.add('show');
+                setTimeout(() => modeToast.classList.remove('show'), 3000);
+            }
+        }
+
+        // --- 2. Component Logic: Blog Viewer ---
+        async function openBlogViewer(cardElement) {
+            const title = cardElement.querySelector('.blog-title').innerHTML;
+            const date = cardElement.querySelector('.blog-date').innerHTML;
+            const category = cardElement.querySelector('.blog-category').innerHTML;
+            const fullContent = cardElement.querySelector('.blog-full-content').innerHTML;
+
+            const projectId = cardElement.dataset.projectId;//获取项目id
+            // 增加浏览量（防止重复计数）
+            if (projectId) {
+                const viewedKey = `viewed_project_${projectId}`;
+                const hasViewed = sessionStorage.getItem(viewedKey);
+
+                // 只有当没有查看记录时才发送请求
+                if (!hasViewed) {
+                    try {
+                        const response = await fetch(`${API_BASE}/projects/${projectId}/view`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            // 标记为已查看
+                            sessionStorage.setItem(viewedKey, 'true');
+                            // 更新卡片上的浏览量显示
+                            const statsElement = cardElement.querySelector('.blog-stats');
+                            if (statsElement) {
+                                const currentText = statsElement.textContent; // "👁 10 💬 5"
+                                const commentMatch = currentText.match(/💬\s*(\d+)/);
+                                const commentText = commentMatch ? ` 💬 ${commentMatch[1]}` : ''; // " 💬 5" or ""
+                                // 更新浏览量
+                                statsElement.innerHTML = `👁 ${data.views}${commentText}`;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('更新浏览量失败:', error);
+                    }
+                }
+            }
+
+
+            const overlay = document.createElement('div');
+            overlay.className = 'blog-viewer-overlay';
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'blog-viewer-content';
+            contentWrapper.addEventListener('click', (e) => e.stopPropagation());
+            contentWrapper.innerHTML = `
+                <span class="close-viewer">&times;</span>
+                <span class="viewer-mode-toggle"></span>
+                <h2 class="viewer-title">${title}</h2>
+                <div class="viewer-meta"><span>📅 ${date}</span><span>${category}</span></div>
+                <div class="viewer-body">${fullContent}</div>
+                <div class="comments-section" id="viewerComments">
+                <div class="comments-header">
+                    <h3 class="comments-title">评论区</h3>
+                    <span class="comments-count">共 <span id="commentsCount">0</span> 条评论</span>
+                </div>
+                <div class="comment-form">
+                    <form id="commentForm" onsubmit="submitComment(event, ${projectId})">
+                        <div class="comment-form-row">
+                            <div class="comment-form-group">
+                                <label>昵称 *</label>
+                                <input type="text" id="commentNickname" required maxlength="50">
+                            </div>
+                            <div class="comment-form-group">
+                                <label>邮箱（选填）</label>
+                                <input type="text" id="commentEmail" maxlength="100" placeholder="选填"></div>
+                            </div>
+                            <div class="comment-form-group">
+                                <label>评论内容 *</label>
+                                <textarea id="commentContent" required maxlength="500"></textarea>
+                            </div>
+                        <button type="submit" class="comment-submit">发表评论</button>
+                    </form>
+                </div>
+    
+                <div class="comments-list" id="commentsList">
+                    <div class="no-comments">暂无评论，快来抢沙发吧！</div>
+                    </div>
+                </div>`
+            overlay.appendChild(contentWrapper);
+            document.body.appendChild(overlay);
+            overlay.querySelector('.close-viewer').addEventListener('click', closeBlogViewer);
+            overlay.addEventListener('click', closeBlogViewer);
+            overlay.querySelector('.viewer-mode-toggle').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDarkMode();
+            });
+            document.body.classList.add('viewer-open');
+            setTimeout(() => overlay.classList.add('visible'), 10);
+            loadComments(projectId);
+        }
+
+        function closeBlogViewer() {
+            const overlay = document.querySelector('.blog-viewer-overlay');
+            if (overlay) {
+                overlay.classList.remove('visible');
+                overlay.addEventListener('transitionend', () => {
+                    if (overlay.parentElement) {
+                        overlay.remove();
+                    }
+                    document.body.classList.remove('viewer-open');
+                }, {
+                    once: true
+                });
+            }
+        }
+
+        // --- 3. Component Logic: Background Particles ---
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            if (!particlesContainer) return;
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = Math.random() * 5 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 20 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // --- 4. Component Logic: Snake Game ---
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        let snake, direction, food, animationId, trail, particles = [];
+        const gridSize = 20;
+        let tileCountX, tileCountY;
+
+        if (canvas) {
+            tileCountX = canvas.width / gridSize;
+            tileCountY = canvas.height / gridSize;
+            snake = [{ x: 10, y: 10 }];
+            direction = { x: 1, y: 0 };
+            food = { x: 15, y: 10 };
+            trail = [];
+        }
+
+        function willCollide(x, y) {
+            if (x < 0 || x >= tileCountX || y < 0 || y >= tileCountY) return true;
+            for (let segment of snake) {
+                if (segment.x === x && segment.y === y) return true;
+            }
+            return false;
+        }
+
+        function calculateNextDirection() {
+            if (!canvas) return;
+            const head = snake[0];
+            const dx = food.x - head.x;
+            const dy = food.y - head.y;
+            const randomFactor = Math.random() > 0.9;
+            if (randomFactor) {
+                const possibleDirections = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+                const validDirections = possibleDirections.filter(dir => !willCollide(head.x + dir.x, head.y + dir.y));
+                if (validDirections.length > 0) return validDirections[Math.floor(Math.random() * validDirections.length)];
+            }
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0 && !willCollide(head.x + 1, head.y)) return { x: 1, y: 0 };
+                if (dx < 0 && !willCollide(head.x - 1, head.y)) return { x: -1, y: 0 };
+            }
+            if (dy > 0 && !willCollide(head.x, head.y + 1)) return { x: 0, y: 1 };
+            if (dy < 0 && !willCollide(head.x, head.y - 1)) return { x: 0, y: -1 };
+            const possibleDirections = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+            for (let dir of possibleDirections) {
+                if (!willCollide(head.x + dir.x, head.y + dir.y)) return dir;
+            }
+            return direction;
+        }
+
+        function createParticleEffect(x, y) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x,
+                    y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    life: 20,
+                    color: `hsl(${Math.random() * 60 + 180}, 100%, 50%)`
+                });
+            }
+        }
+
+        function updateParticles() {
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                return p.life > 0;
+            });
+        }
+
+        function generateFood() {
+            do {
+                food = {
+                    x: Math.floor(Math.random() * tileCountX),
+                    y: Math.floor(Math.random() * tileCountY)
+                };
+            } while (snake.some(segment => segment.x === food.x && segment.y === food.y));
+        }
+
+        function updateAnimation() {
+            if (!canvas) return;
+            direction = calculateNextDirection();
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+            if (head.x < 0) head.x = tileCountX - 1;
+            if (head.x >= tileCountX) head.x = 0;
+            if (head.y < 0) head.y = tileCountY - 1;
+            if (head.y >= tileCountY) head.y = 0;
+            trail.push({ x: head.x, y: head.y, life: 5 });
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                generateFood();
+                //createParticleEffect(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2);
+                if (snake.length > 15) snake.pop();
+            } else {
+                snake.pop();
+            }
+            trail = trail.filter(t => {
+                t.life - 3;
+                return t.life > 0;
+            });
+            if (snake.length < 3) snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+            drawAnimation();
+        }
+
+        function drawAnimation() {
+            if (!ctx) return;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= canvas.width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= canvas.height; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            // 绘制轨迹
+            trail.forEach(t => {
+                if (t.life > 1) return; // 只绘制最近的 2 格轨迹
+                ctx.fillStyle = `rgba(93, 213, 255, ${t.life * 0.05})`; // 提高透明度系数让轨迹更明显
+                ctx.fillRect(t.x * gridSize, t.y * gridSize, gridSize, gridSize);
+            });
+            snake.forEach((segment, index) => {
+                const opacity = 1 - (index / snake.length) * 0.5;
+                if (index === 0) {
+                    // 绘制蛇头
+                    ctx.fillStyle = `rgba(0, 255, 136, ${opacity})`;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#00ff88';
+                    ctx.fillRect(segment.x * gridSize + 2, segment.y * gridSize + 2, gridSize - 4, gridSize - 4);
+                    ctx.shadowBlur = 0;
+
+                    // 添加蛇眼
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                    const eyeSize = 3;
+                    const eyeOffset = 5;
+
+                    // 根据方向绘制眼睛位置
+                    if (direction.x > 0) { // 向右
+                        ctx.fillRect(segment.x * gridSize + gridSize - eyeOffset - eyeSize, segment.y * gridSize + eyeOffset, eyeSize, eyeSize);
+                        ctx.fillRect(segment.x * gridSize + gridSize - eyeOffset - eyeSize, segment.y * gridSize + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                    } else if (direction.x < 0) { // 向左
+                        ctx.fillRect(segment.x * gridSize + eyeOffset, segment.y * gridSize + eyeOffset, eyeSize, eyeSize);
+                        ctx.fillRect(segment.x * gridSize + eyeOffset, segment.y * gridSize + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                    } else if (direction.y > 0) { // 向下
+                        ctx.fillRect(segment.x * gridSize + eyeOffset, segment.y * gridSize + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                        ctx.fillRect(segment.x * gridSize + gridSize - eyeOffset - eyeSize, segment.y * gridSize + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                    } else { // 向上
+                        ctx.fillRect(segment.x * gridSize + eyeOffset, segment.y * gridSize + eyeOffset, eyeSize, eyeSize);
+                        ctx.fillRect(segment.x * gridSize + gridSize - eyeOffset - eyeSize, segment.y * gridSize + eyeOffset, eyeSize, eyeSize);
+                    }
+                } else {
+                    // 绘制蛇身
+                    ctx.fillStyle = `rgba(93, 213, 255, ${opacity})`;
+                    ctx.shadowBlur = 0;
+                    ctx.fillRect(segment.x * gridSize + 2, segment.y * gridSize + 2, gridSize - 4, gridSize - 4);
+                }
+            });
+            const time = Date.now() * 0.001;
+            const foodGlow = Math.sin(time * 5) * 0.3 + 0.7;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff6b6b';
+            ctx.fillStyle = `rgba(255, 107, 107, ${foodGlow})`;
+            ctx.beginPath();
+            ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            updateParticles();
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+            });
+        }
+
+        function animateSnake() {
+            updateAnimation();
+            animationId = setTimeout(() => {
+                requestAnimationFrame(animateSnake);
+            }, 100);
+        }
+
+        // --- 5. Component Logic: Music Player ---
+        function initMusicPlayer() {
+            const bgMusic = document.getElementById('bgMusic');
+            const decorativeIcons = document.querySelector('.decorative-icons');
+            const nameWrapper = document.querySelector('.name-wrapper');
+            if (!bgMusic || !decorativeIcons) return;
+            let isPlaying = false;
+
+            async function loadBgmUrl() {
+                try {
+                    const response = await fetch(`${API_BASE}/settings`);
+                    const settings = await response.json();
+                    if (settings.bgm_url) {
+                        const bgmUrl = settings.bgm_url.startsWith('http') ? settings.bgm_url : `${BACKEND_DOMAIN}${settings.bgm_url}`;
+                        bgMusic.src = bgmUrl;
+                        //console.log('BGM URL set to:', bgmUrl);
+                    }
+                } catch (error) {
+                    console.error('Failed to load BGM URL:', error);
+                }
+            }
+
+            loadBgmUrl();
+
+            function toggleMusic() {
+                if (isPlaying) {
+                    bgMusic.pause();
+                    decorativeIcons.classList.remove('playing');
+                    nameWrapper.classList.remove('music-floating');
+                } else {
+                    bgMusic.play().then(() => {
+                        decorativeIcons.classList.add('playing');
+                        nameWrapper.classList.add('music-floating');
+                    }).catch(err => console.log('Playback failed:', err));
+                }
+                isPlaying = !isPlaying;
+            }
+
+            decorativeIcons.addEventListener('click', toggleMusic);
+            bgMusic.addEventListener('ended', () => {
+                isPlaying = false;
+                decorativeIcons.classList.remove('playing');
+                nameWrapper.classList.remove('music-floating');
+            });
+        }
+
+        // --- 6. Component Logic: Search ---
+        function initSearch() {
+            const searchInput = document.querySelector('.search-input');
+            const searchClear = document.querySelector('.search-clear');
+            const searchResultsInfo = document.querySelector('.search-results-info');
+            const resultsCount = document.querySelector('.results-count');
+            if (!searchInput || !searchClear || !searchResultsInfo) return;
+
+            function performSearch() {
+                const query = searchInput.value.toLowerCase().trim();
+                const blogCards = document.querySelectorAll('.blog-card');
+                let visibleCount = 0;
+                blogCards.forEach(card => {
+                    const title = card.querySelector('.blog-title').textContent.toLowerCase();
+                    const excerpt = card.querySelector('.blog-excerpt').textContent.toLowerCase();
+                    const category = card.querySelector('.blog-category').textContent.toLowerCase();
+                    const matches = query === '' || title.includes(query) || excerpt.includes(query) || category.includes(query);
+                    card.classList.toggle('search-hidden', !matches);
+                    if (matches) visibleCount++;
+                });
+                if (query) {
+                    searchClear.style.display = 'block';
+                    searchResultsInfo.style.display = 'block';
+                    resultsCount.textContent = visibleCount;
+                } else {
+                    searchClear.style.display = 'none';
+                    searchResultsInfo.style.display = 'none';
+                }
+                const container = document.querySelector('#projects .blog-container');
+                if (container && visibleCount === 0 && query) {
+                    let noResultsMsg = container.querySelector('.no-results-message');
+                    if (!noResultsMsg) {
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.className = 'no-results-message';
+                        noResultsMsg.textContent = '没有找到相关的项目 😔';
+                        container.appendChild(noResultsMsg);
+                    }
+                } else {
+                    const noResultsMsg = container?.querySelector('.no-results-message');
+                    if (noResultsMsg) noResultsMsg.remove();
+                }
+            }
+
+            searchInput.addEventListener('input', performSearch);
+            searchClear.addEventListener('click', () => {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+        }
+
+        // --- 7. Tab Switching ---
+
+        function switchTab(tabName) {
+            // 先检查功能是否启用
+            if (tabName === 'ai-reports') {
+                fetch(`${API_BASE}/settings`)
+                    .then(response => response.json())
+                    .then(settings => {
+                        if (settings.ai_reports_enabled === 0) {
+                            //console.log('AI日报功能已关闭');
+                            return;
+                        }
+
+                        // 功能开启时正常切换
+                        performTabSwitch(tabName);
+                    })
+                    .catch(error => {
+                        console.error('检查AI日报功能状态失败:', error);
+                    });
+            } else {
+                performTabSwitch(tabName);
+            }
+        }
+
+        function performTabSwitch(tabName) {
+            //console.log('切换标签到:', tabName);
+
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+
+            const targetTab = Array.from(document.querySelectorAll('.tab')).find(tab => {
+                const tabText = tab.textContent.trim();
+                return tabText.includes(getTabDisplayName(tabName));
+            });
+
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            const targetSection = document.getElementById(tabName);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+
+            if (tabName === 'ai-reports') {
+                //console.log('初始化AI日报标签');
+                setTimeout(() => {
+                    loadAIReports(1, false);
+                }, 100);
+            } else if (tabName === 'projects') {
+                setTimeout(checkAndOpenProject, 100);
+            }
+        }
+
+        // 辅助函数：获取标签显示名称
+        function getTabDisplayName(tabId) {
+            const mapping = {
+                'site': '网站主页',
+                'projects': '项目',
+                'resourcesharing': '资源分享',
+                'skills': '涉及知识',
+                'ai-reports': 'AI日报'
+            };
+            return mapping[tabId] || '';
+        }
+
+        // --- 8. Load Data Functions ---
+        async function loadSettings() {
+            try {
+                const response = await fetch(`${API_BASE}/settings`);
+                const settings = await response.json();
+                if (settings.profile_name) document.querySelector('.role').innerHTML = `👨‍💻 ${settings.profile_role || 'Unity个人开发者'}`;
+                if (settings.profile_motto) document.querySelector('.motto').innerHTML = `📚 ${settings.profile_motto}`;
+                if (settings.profile_location) document.querySelector('.info-card:first-child').innerHTML = `<div>📍 ${settings.profile_location}</div><div>🏢 泰安</div>`;
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch(`${API_BASE}/projects`);
+                const projects = await response.json();
+
+                const container = document.querySelector('#projects .blog-container');
+                container.innerHTML = '';
+
+                projects.forEach(project => {
+                    container.appendChild(createBlogCard(project));
+                });
+            } catch (error) {
+                console.error('加载项目失败:', error);
+            }
+        }
+
+        async function loadSites() {
+            try {
+                const response = await fetch(`${API_BASE}/sites`);
+                const sites = await response.json();
+                const container = document.querySelector('#site .project-grid');
+                container.innerHTML = sites.map(site => `
+                    <a href="${site.url}" target="_blank" class="project-card glass-card" style="text-decoration: none; color: inherit;">
+                        <div class="project-icon">${site.icon}</div>
+                        <h3>${site.name}</h3>
+                        <p>${site.description}</p>
+                    </a>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load sites:', error);
+            }
+        }
+
+        async function loadResources() {
+            try {
+                const response = await fetch(`${API_BASE}/resources`);
+                const resources = await response.json();
+                const container = document.querySelector('#resourcesharing .project-grid');
+                container.innerHTML = resources.map(resource => `
+                    <a href="${resource.url}" target="_blank" class="project-card glass-card" style="text-decoration: none; color: inherit;">
+                        <div class="project-icon">${resource.icon}</div>
+                        <h3>${resource.name}</h3>
+                        <p>${resource.description}</p>
+                    </a>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load resources:', error);
+            }
+        }
+
+        async function loadSkills() {
+            try {
+                const response = await fetch(`${API_BASE}/skills`);
+                const skills = await response.json();
+                const container = document.querySelector('#skills .skills-grid');
+                container.innerHTML = skills.map(skill => `<div class="skill-item glass-card">${skill.name}</div>`).join('');
+            } catch (error) {
+                console.error('Failed to load skills:', error);
+            }
+        }
+
+        // --- 9. Initialization ---
+        document.addEventListener('DOMContentLoaded', async function () {
+            // 检查AI日报功能是否启用
+            try {
+                const response = await fetch(`${API_BASE}/settings`);
+                const settings = await response.json();
+
+                if (settings.ai_reports_enabled === 0) {
+                    const aiReportsTab = document.querySelector('.tab[onclick="switchTab(\'ai-reports\')"]');
+                    if (aiReportsTab) {
+                        aiReportsTab.style.display = 'none';
+                    }
+
+                    const aiReportsSection = document.getElementById('ai-reports');
+                    if (aiReportsSection) {
+                        aiReportsSection.style.display = 'none';
+                    }
+
+                    //console.log('AI日报功能已关闭，相关界面已隐藏');
+                }
+            } catch (error) {
+                console.error('检查AI日报功能状态失败:', error);
+            }
+            // Dark mode
+            if (darkMode) document.body.classList.add('dark-mode');
+            const avatar = document.querySelector('.avatar');
+            const modeIndicator = document.createElement('div');
+            modeIndicator.className = 'mode-indicator';
+            avatar.appendChild(modeIndicator);
+            avatar.addEventListener('click', function () {
+                this.classList.add('clicked');
+                setTimeout(() => this.classList.remove('clicked'), 300);
+                toggleDarkMode();
+            });
+            // Toast
+            const modeToast = document.createElement('div');
+            modeToast.className = 'mode-toast';
+            document.body.appendChild(modeToast);
+            // Components
+            createParticles();
+            if (animationId) cancelAnimationFrame(animationId);
+            animateSnake();
+            initMusicPlayer();
+            initSearch();
+            // Load data
+            loadSettings();
+            loadProjects();
+            loadSites();
+            loadResources();
+            loadSkills();
+            setTimeout(() => {
+                checkAndOpenProject();
+            }, 1000);
+        });
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (animationId) cancelAnimationFrame(animationId);
+        });
+
+        // 复制项目链接
+        function copyProjectLink(event, projectId) {
+            event.stopPropagation();
+
+            // 生成项目直链
+            const projectUrl = `${window.location.origin}${window.location.pathname}?project=${projectId}`;
+
+            // 复制到剪贴板
+            navigator.clipboard.writeText(projectUrl).then(() => {
+                showShareToast('链接已复制！');
+            }).catch(() => {
+                // 降级方案
+                const textArea = document.createElement('textarea');
+                textArea.value = projectUrl;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showShareToast('链接已复制！');
+            });
+        }
+
+        // 显示提示
+        function showShareToast(message) {
+            const existingToast = document.querySelector('.share-toast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'share-toast show';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+        let hasProcessedUrlParam = false;
+        // 检查URL参数，如果有project参数则自动打开对应项目
+        function checkAndOpenProject() {
+            if (hasProcessedUrlParam) return;
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectId = urlParams.get('project');
+
+            if (projectId) {
+                hasProcessedUrlParam = true;
+                // 切换到项目标签
+                switchTab('projects');
+
+                setTimeout(() => {
+                    const projectCards = document.querySelectorAll('.blog-card');
+                    for (let card of projectCards) {
+                        if (card.dataset.projectId === projectId) {
+                            openBlogViewer(card);
+                            const newUrl = window.location.pathname;
+                            window.history.replaceState({}, document.title, newUrl);
+                            break;
+                        }
+                    }
+                }, 500);
+            }
+        }
+        // 加载评论
+        async function loadComments(projectId) {
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/comments`);
+                const comments = await response.json();
+
+                const commentsList = document.getElementById('commentsList');
+                const commentsCount = document.getElementById('commentsCount');
+
+                commentsCount.textContent = comments.length;
+
+                if (comments.length === 0) {
+                    commentsList.innerHTML = '<div class="no-comments">暂无评论，快来抢沙发吧！</div>';
+                    return;
+                }
+
+                commentsList.innerHTML = comments.map(comment => `
+                    <div class="comment-item ${comment.is_owner ? 'owner-comment' : ''}">
+                        <div class="comment-header">
+                            <span class="comment-author ${comment.is_owner ? 'owner' : ''}">
+                                ${comment.nickname}
+                                ${comment.is_owner ? '<span class="owner-badge">博主</span>' : ''}
+                            </span>
+                            <span class="comment-time">${new Date(comment.created_at).toLocaleString('zh-CN')}</span>
+                            </div>
+                        <div class="comment-content">${comment.content}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加载评论失败:', error);
+            }
+        }
+
+        // 提交评论
+        async function submitComment(event, projectId) {
+            event.preventDefault();
+
+            const emailInput = document.getElementById('commentEmail').value;
+
+            // 如果填写了内容且包含@，则验证邮箱格式
+            if (emailInput && emailInput.includes('@')) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailInput)) {
+                    alert('请输入有效的邮箱地址');
+                    return;
+                }
+            }
+
+            const data = {
+                nickname: document.getElementById('commentNickname').value,
+                email: emailInput,  // 可能是邮箱，也可能是密码
+                content: document.getElementById('commentContent').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${projectId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // 清空表单
+                    document.getElementById('commentForm').reset();
+                    // 重新加载评论
+                    loadComments(projectId);
+                    const cardElement = document.querySelector(`[data-project-id="${projectId}"]`);
+                    if (cardElement) {
+                        const statsElement = cardElement.querySelector('.blog-stats');
+                        if (statsElement) {
+                            const statsText = statsElement.textContent;
+                            const viewMatch = statsText.match(/👁\s*(\d+)/);
+                            const commentMatch = statsText.match(/💬\s*(\d+)/);
+                            const views = viewMatch ? parseInt(viewMatch[1]) : 0;
+                            const comments = commentMatch ? parseInt(commentMatch[1]) : 0;
+                            // 更新评论数
+                            statsElement.innerHTML = `👁 ${views} 💬 ${comments + 1}`;
+                        }
+                    }
+                } else {
+                    alert(result.message || '评论发表失败');
+                }
+            } catch (error) {
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // AI日报全局变量
+        let aiReportsState = {
+            currentPage: 1,
+            totalPages: 1,
+            allReports: [],
+            isLoading: false
+        };
+
+        // 工具函数
+        function safeEscapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showToast(message, type = 'info') {
+            const existingToast = document.querySelector('.ai-toast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'ai-toast';
+            toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'error' ? '#ff6b6b' : '#5dd5ff'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+    `;
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // 主要的AI日报加载函数
+        async function loadAIReports(page = 1, append = false) {
+            // 检查AI日报功能是否启用
+            try {
+                const settingsResponse = await fetch(`${API_BASE}/settings`);
+                const settings = await settingsResponse.json();
+
+                if (settings.ai_reports_enabled === 0) {
+                    const container = document.getElementById('aiReportsList');
+                    if (container) {
+                        container.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🚫</div>
+                        <p style="opacity: 0.7;">AI日报功能暂时关闭</p>
+                        <p style="opacity: 0.5; font-size: 14px; margin-top: 10px;">管理员可在后台重新开启此功能</p>
+                    </div>
+                `;
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('检查AI日报功能状态失败:', error);
+            }
+            if (aiReportsState.isLoading) {
+                console.log('正在加载中，跳过重复请求');
+                return;
+            }
+
+            //console.log(`开始加载AI日报 - 页码: ${page}, 追加模式: ${append}`);
+            aiReportsState.isLoading = true;
+
+            try {
+                // 检查必要的元素
+                const container = document.getElementById('aiReportsList');
+                if (!container) {
+                    throw new Error('找不到AI日报容器元素');
+                }
+
+                // 显示加载状态
+                if (!append) {
+                    container.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">🤖</div>
+                    <p style="opacity: 0.7;">正在加载AI日报...</p>
+                </div>
+            `;
+                }
+                const apiUrl = `${API_BASE}/ai-reports?page=${page}&limit=10`;
+
+                //console.log('请求URL:', apiUrl);
+
+                const response = await fetch(apiUrl);
+                //console.log('响应状态:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                //console.log('接收到的数据:', data);
+
+                // 验证数据格式
+                if (!data || !Array.isArray(data.reports)) {
+                    throw new Error('API返回数据格式错误');
+                }
+
+                // 更新状态
+                if (append) {
+                    aiReportsState.allReports = aiReportsState.allReports.concat(data.reports);
+                } else {
+                    aiReportsState.allReports = data.reports;
+                }
+
+                aiReportsState.currentPage = page;
+                aiReportsState.totalPages = data.pagination?.totalPages || 1;
+
+                // 渲染界面
+                renderAIReportsList();
+                renderAIReportsTimeline();
+                updateAIReportsStats(data.pagination?.total || 0);
+
+                //console.log(`AI日报加载成功，当前共 ${aiReportsState.allReports.length} 条`);
+
+                if (aiReportsState.allReports.length === 0) {
+                    showToast('暂无AI日报数据', 'info');
+                }
+
+            } catch (error) {
+                console.error('加载AI日报失败:', error);
+
+                const container = document.getElementById('aiReportsList');
+                if (container) {
+                    container.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">😔</div>
+                    <p style="color: #ff6b6b; margin-bottom: 10px;">加载失败</p>
+                    <p style="opacity: 0.7; font-size: 14px; margin-bottom: 20px;">${error.message}</p>
+                    <button onclick="retryLoadAIReports()" style="
+                        padding: 10px 20px;
+                        background: #5dd5ff;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-family: inherit;
+                    ">重试</button>
+                </div>
+            `;
+                }
+
+                showToast(`加载失败: ${error.message}`, 'error');
+            } finally {
+                aiReportsState.isLoading = false;
+            }
+        }
+
+        // 重试函数
+        function retryLoadAIReports() {
+            console.log('用户点击重试');
+            loadAIReports(1, false);
+        }
+
+        // 渲染AI日报列表
+        function renderAIReportsList() {
+            const container = document.getElementById('aiReportsList');
+            if (!container) {
+                console.error('找不到aiReportsList容器');
+                return;
+            }
+
+            const reports = aiReportsState.allReports;
+
+            if (reports.length === 0) {
+                container.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📰</div>
+                <p style="opacity: 0.7;">暂无AI日报</p>
+                <p style="opacity: 0.5; font-size: 14px; margin-top: 10px;">等待最新资讯推送...</p>
+            </div>
+        `;
+                return;
+            }
+
+            // 清空容器
+            container.innerHTML = '';
+
+            // 创建日报卡片
+            reports.forEach((report, index) => {
+                const card = createAIReportCard(report, index);
+                container.appendChild(card);
+            });
+
+            // 更新加载更多按钮
+            updateLoadMoreButton();
+        }
+
+        // 创建单个AI日报卡片
+        function createAIReportCard(report, index) {
+            const card = document.createElement('div');
+            card.className = 'ai-report-card glass-card';
+            card.dataset.reportDate = report.report_date;
+
+            card.innerHTML = `
+        <div class="ai-report-header">
+            <span class="ai-report-date">📅 ${report.report_date}</span>
+            <span class="ai-report-highlights">🔥 ${report.highlights_count || 0}个亮点</span>
+        </div>
+        <div class="ai-report-title">
+            🤖 ${safeEscapeHtml(report.title)}
+        </div>
+        <div class="ai-report-summary">
+            ${safeEscapeHtml(report.summary)}
+        </div>
+        <div class="ai-report-footer">
+            <span class="read-report">阅读全文 →</span>
+            <div class="blog-actions">
+                <span class="share-btn">📤 分享</span>
+            </div>
+        </div>
+    `;
+
+            // 添加事件监听器
+            card.addEventListener('click', (e) => {
+                // 检查是否点击的是分享按钮
+                if (e.target.classList.contains('share-btn') || e.target.closest('.share-btn')) {
+                    e.stopPropagation();
+                    shareAIReport(report.report_date, report.title);
+                } else {
+                    viewAIReport(report.report_date);
+                }
+            });
+
+            return card;
+        }
+
+        // 渲染时间线
+        function renderAIReportsTimeline() {
+            const container = document.getElementById('reportsTimeline');
+            if (!container) {
+                console.error('找不到reportsTimeline容器');
+                return;
+            }
+
+            const reports = aiReportsState.allReports.slice(0, 15); // 显示最近15期
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p style="opacity: 0.6; text-align: center; padding: 20px;">暂无日报</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            reports.forEach((report, index) => {
+                const item = document.createElement('div');
+                item.className = `timeline-item ${index === 0 ? 'active' : ''}`;
+
+                item.innerHTML = `
+            <div class="timeline-dot ${index === 0 ? '' : 'inactive'}"></div>
+            <div>
+                <div style="font-size: 14px; font-weight: 500;">${report.report_date}</div>
+                <div style="font-size: 12px; opacity: 0.7;">${report.highlights_count || 0}个亮点</div>
+            </div>
+        `;
+
+                item.addEventListener('click', () => viewAIReport(report.report_date));
+                container.appendChild(item);
+            });
+        }
+
+        // 更新统计信息
+        function updateAIReportsStats(total) {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+
+            const monthlyCount = aiReportsState.allReports.filter(report => {
+                const reportDate = new Date(report.report_date);
+                return reportDate.getMonth() + 1 === currentMonth &&
+                    reportDate.getFullYear() === currentYear;
+            }).length;
+
+            // 安全地更新统计元素
+            const updateElement = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+
+            updateElement('totalReports', total);
+            updateElement('monthlyReports', monthlyCount);
+            updateElement('latestDate', aiReportsState.allReports.length > 0 ? aiReportsState.allReports[0].report_date : '-');
+        }
+
+        // 更新加载更多按钮
+        function updateLoadMoreButton() {
+            const btn = document.querySelector('.load-more-btn');
+            if (!btn) return;
+
+            if (aiReportsState.currentPage < aiReportsState.totalPages) {
+                btn.style.display = 'block';
+                btn.onclick = () => loadAIReports(aiReportsState.currentPage + 1, true);
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        // 查看AI日报详情
+        async function viewAIReport(reportDate) {
+            //console.log('查看AI日报:', reportDate);
+
+            try {
+                const apiBase = window.API_BASE;
+                const response = await fetch(`${apiBase}/ai-reports/${reportDate}`);
+
+                if (!response.ok) {
+                    throw new Error(`无法获取日报详情: ${response.status}`);
+                }
+
+                const report = await response.json();
+
+                // 显示日报查看器
+                showAIReportViewer(report);
+
+            } catch (error) {
+                console.error('查看AI日报失败:', error);
+                showToast(`查看失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 显示AI日报查看器
+        function showAIReportViewer(report) {
+            const overlay = document.createElement('div');
+            overlay.className = 'blog-viewer-overlay';
+
+            const content = document.createElement('div');
+            content.className = 'blog-viewer-content';
+            content.addEventListener('click', e => e.stopPropagation());
+
+            content.innerHTML = `
+        <span class="close-viewer">&times;</span>
+        <span class="viewer-mode-toggle"></span>
+        <h2 class="viewer-title">${safeEscapeHtml(report.title)}</h2>
+        <div class="viewer-meta">
+            <span>📅 ${report.report_date}</span>
+            <span>🤖 AI日报</span>
+            <span>🔥 ${report.highlights_count || 0}个亮点</span>
+        </div>
+        <div class="viewer-body">${report.content}</div>
+    `;
+
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
+            // 事件绑定
+            const closeBtn = content.querySelector('.close-viewer');
+            const modeToggle = content.querySelector('.viewer-mode-toggle');
+
+            closeBtn.addEventListener('click', () => closeAIReportViewer(overlay));
+            overlay.addEventListener('click', () => closeAIReportViewer(overlay));
+
+            if (modeToggle && typeof toggleDarkMode === 'function') {
+                modeToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleDarkMode();
+                });
+            }
+
+            // 显示动画
+            document.body.classList.add('viewer-open');
+            setTimeout(() => overlay.classList.add('visible'), 10);
+        }
+
+        // 关闭AI日报查看器
+        function closeAIReportViewer(overlay) {
+            overlay.classList.remove('visible');
+            overlay.addEventListener('transitionend', () => {
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
+                document.body.classList.remove('viewer-open');
+            }, { once: true });
+        }
+
+        // 分享AI日报
+        function shareAIReport(reportDate, title) {
+            const url = `${window.location.origin}${window.location.pathname}?ai-report=${reportDate}`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: `AI日报: ${title}`,
+                    url: url
+                }).catch(err => console.log('分享取消:', err));
+            } else {
+                // 复制到剪贴板
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(url).then(() => {
+                        showToast('链接已复制到剪贴板');
+                    });
+                } else {
+                    // 降级方案
+                    const textarea = document.createElement('textarea');
+                    textarea.value = url;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('链接已复制到剪贴板');
+                }
+            }
+        }
+
+        function getTabDisplayName(tabId) {
+            const mapping = {
+                'site': '网站主页',
+                'projects': '项目',
+                'resourcesharing': '资源分享',
+                'skills': '涉及知识',
+                'ai-reports': 'AI日报'
+            };
+            return mapping[tabId] || '';
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            //console.log('页面加载完成，初始化AI日报功能');
+
+            // 检查是否有AI日报相关的URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const aiReportDate = urlParams.get('ai-report');
+
+            if (aiReportDate) {
+                //console.log('检测到AI日报参数，自动打开:', aiReportDate);
+                switchTab('ai-reports');
+                setTimeout(() => {
+                    viewAIReport(aiReportDate);
+                }, 1000);
+            }
+        });
+
+        //console.log('AI日报功能代码已加载完成');
+
+        const loadedSections = new Set();
+
+        function switchContent(sectionName) {
+            document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            const activeSection = document.getElementById(sectionName + 'Section');
+            const activeTab = document.querySelector(`.tab[onclick="switchContent('${sectionName}')"]`);
+
+            if (activeSection) activeSection.style.display = 'block';
+            if (activeTab) activeTab.classList.add('active');
+
+            if (!loadedSections.has(sectionName)) {
+                if (sectionName === 'blog') {
+                    loadAndRenderBlogs();
+                }
+                loadedSections.add(sectionName);
+            }
+        }
+
+        async function loadAndRenderBlogs() {
+            const container = document.getElementById('blogListContainer');
+            if (!container) return;
+
+            container.innerHTML = '<p class="no-results-message">正在加载博客列表...</p>';
+
+            try {
+                const response = await fetch('/api/projects');
+                if (!response.ok) throw new Error(`服务器响应: ${response.status}`);
+                const projects = await response.json();
+
+                container.innerHTML = ''; // 清空加载提示
+
+                if (projects.length === 0) {
+                    container.innerHTML = '<p class="no-results-message">这里还没有任何内容哦</p>';
+                    return;
+                }
+
+                projects.forEach(project => {
+                    const createdAt = new Date(project.created_at);
+                    const updatedAt = new Date(project.updated_at);
+
+                    let datePrefix = '发布于';
+                    let displayDate = createdAt;
+
+                    // 如果更新时间存在，且比创建时间晚超过1分钟，则视为已修改
+                    if (project.updated_at && (updatedAt.getTime() - createdAt.getTime() > 60000)) {
+                        datePrefix = '修改于';
+                        displayDate = updatedAt;
+                    }
+
+                    const cardHTML = `
+                    <div class="blog-card glass-card" data-project-id="${project.id}" onclick="showBlogViewer(${project.id})">
+                        <div class="blog-header">
+                            <span class="blog-date">${datePrefix} ${displayDate.toLocaleDateString()}</span>
+                            <span class="blog-category">${project.category}</span>
+                        </div>
+                        <h3 class="blog-title">${project.title}</h3>
+                        <p class="blog-excerpt">${project.excerpt}</p>
+                        <div class="blog-footer">
+                            <span class="read-more">阅读全文 &rarr;</span>
+                            <div class="blog-stats">
+                                <span>👁️ ${project.views || 0}</span>
+                                <span style="margin-left: 15px;">💬 ${project.comments || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                    container.insertAdjacentHTML('beforeend', cardHTML);
+                });
+            } catch (error) {
+                console.error('加载博客失败:', error);
+                container.innerHTML = `<p class="no-results-message">加载博客失败: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

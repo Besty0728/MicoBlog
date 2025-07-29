@@ -1,0 +1,30 @@
+# Node.js and dependencies
+/backend/node_modules
+/backend/npm-debug.log*
+/backend/yarn-error.log
+
+# Database file
+# 包含了所有用户数据、配置和内容，绝不能上传！
+/backend/database.db
+
+# User-uploaded content
+# 用户上传的音乐、图片等，通常不计入版本控制
+/backend/uploads/
+
+# Operating System generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor directories
+.idea
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

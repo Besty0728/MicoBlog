@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - 流转星博客</title>
+    <script src="/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'MapleMono NF CN';
+            src: url('../fonts/MapleMono-NF-CN-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        body {
+            font-family: 'MapleMono NF CN', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* 登录界面 */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        input,
+        textarea,
+        select {
+            font-family: inherit;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            font-family: inherit;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 管理界面 */
+        .admin-container {
+            display: none;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            color: #667eea;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .preview-btn {
+            width: auto;
+            padding: 10px 20px;
+            background: #4ecdc4;
+        }
+
+        .logout-btn {
+            width: auto;
+            padding: 10px 20px;
+            background: #ff6b6b;
+        }
+
+        .admin-content {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            border-color: #667eea;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .item-list {
+            margin-top: 30px;
+        }
+
+        .list-item {
+            background: #f5f7fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item:hover {
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .item-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            width: auto;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn-edit {
+            background: #4ecdc4;
+        }
+
+        .btn-delete {
+            background: #ff6b6b;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: #f5f7fa;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            text-align: center;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #e9ecef;
+        }
+
+        /* 网站和资源卡片样式 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card-item {
+            background: #f5f7fa;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .card-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .card-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .card-item p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .card-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .btn-delete-small {
+            padding: 5px 10px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* 技能标签样式 */
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .skill-tag {
+            background: #e9ecef;
+            padding: 10px 20px;
+            border-radius: 25px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .skill-tag:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .skill-tag .delete-skill {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #ff6b6b;
+        }
+
+        /* 预览模态框 */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .preview-content {
+            width: 90%;
+            height: 90%;
+            margin: 5% auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-header {
+            background: #333;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .refresh-btn {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .refresh-btn:hover {
+            background: #45b7aa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(78, 205, 196, 0.3);
+        }
+
+        .preview-close {
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: calc(100% - 60px);
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .admin-content {
+                padding: 15px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .tabs {
+                justify-content: center;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #checkboxInput {
+            display: none;
+        }
+
+        .toggleSwitch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 50px;
+            height: 30px;
+            background-color: rgb(82, 82, 82);
+            border-radius: 20px;
+            cursor: pointer;
+            transition-duration: .2s;
+        }
+
+        .toggleSwitch::after {
+            content: "";
+            position: absolute;
+            top: 5px;
+            height: 10px;
+            width: 10px;
+            left: 5px;
+            background-color: transparent;
+            border-radius: 50%;
+            transition-duration: .2s;
+            box-shadow: 5px 2px 7px rgba(8, 8, 8, 0.26);
+            border: 5px solid white;
+        }
+
+        #checkboxInput:checked+.toggleSwitch::after {
+            transform: translateX(100%);
+            transition-duration: .2s;
+            background-color: white;
+        }
+
+        /* Switch background change */
+        #checkboxInput:checked+.toggleSwitch {
+            background-color: rgb(0, 255, 55);
+            transition-duration: .2s;
+        }
+
+        #aiReportsSwitch:checked+.toggleSwitch::after,
+        #ipMonitoringSwitch:checked+.toggleSwitch::after {
+            transform: translateX(100%);
+            transition-duration: .2s;
+            background-color: white;
+        }
+
+        #aiReportsSwitch:checked+.toggleSwitch,
+        #ipMonitoringSwitch:checked+.toggleSwitch {
+            background-color: rgb(0, 255, 55);
+            transition-duration: .2s;
+        }
+
+        #aiReportsSwitch,
+        #ipMonitoringSwitch {
+            display: none !important;
+        }
+
+        .toggleSwitch {
+            display: flex !important;
+        }
+
+        #securitySection input[type="checkbox"]:not(.toggleSwitch) {
+            display: none !important;
+        }
+
+        #securitySection input[type="checkbox"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 0;
+            height: 0;
+        }
+
+        .radio-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .radio-switch:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        input[type="radio"] {
+            display: none;
+        }
+
+        input[type="radio"]:checked+.radio-switch {
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            transform: scale(1.05);
+        }
+
+        input[type="radio"]:checked+.radio-switch span {
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        #configurationsSection h3 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: #667eea;
+        }
+
+        #configurationsSection small {
+            display: block;
+            margin-top: 5px;
+            color: #888;
+            font-size: 13px;
+        }
+
+        #configurationsSection .restart-notice {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 40px;
+            /* 根据你的label和input高度微调 */
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 登录界面 -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1>🔐 后台管理系统</h1>
+            <form id="loginForm">
+                <input type="text" id="username" placeholder="用户名" value="admin" required>
+                <input type="password" id="password" placeholder="密码" required>
+                <button type="submit">登录</button>
+            </form>
+            <div class="alert alert-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- 管理界面 -->
+    <div class="admin-container" id="adminContainer">
+        <header class="admin-header">
+            <h1>流转星博客 - 后台管理</h1>
+            <div class="header-buttons">
+                <button class="preview-btn" onclick="openPreview()">预览网站</button>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <!-- 选项卡 -->
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('settings')">🎵 网站设置</div>
+                <div class="tab" onclick="switchTab('profile')">👤 个人信息</div>
+                <div class="tab" onclick="switchTab('projects')">📝 项目管理</div>
+                <div class="tab" onclick="switchTab('sites')">🏠 网站主页</div>
+                <div class="tab" onclick="switchTab('resources')">🚀 资源分享</div>
+                <div class="tab" onclick="switchTab('skills')">⚡ 技能管理</div>
+                <div class="tab" onclick="switchTab('ai-reports')">📰 AI日报管理</div>
+                <div class="tab" onclick="switchTab('security')">🔒 功能设置</div>
+                <div class="tab" onclick="switchTab('comments')">💬 评论管理</div>
+                <div class="tab" onclick="switchTab('monitoring')">🛡️ 安全监控</div>
+                <div class="tab" onclick="switchTab('configurations')">⚙️ 环境设置</div>
+            </div>
+
+            <!-- 网站设置 -->
+            <div class="section active" id="settingsSection">
+                <h2>🎵 背景音乐设置</h2>
+                <div
+                    style="background: rgba(93, 213, 255, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <p style="margin: 0; font-size: 16px; font-family: 'MapleMono NF CN', sans-serif;">
+                        当前背景音乐：<span id="currentBgmName"
+                            style="color: #5dd5ff; font-weight: bold; font-family: inherit;">加载中...</span>
+                    </p>
+                </div>
+                <div class="alert" id="bgmAlert"></div>
+                <form id="bgmForm">
+                    <div class="form-group">
+                        <label>音乐名称</label>
+                        <input type="text" id="bgmName" placeholder="例如：周杰伦 - 珊瑚海">
+                    </div>
+                    <div class="form-group">
+                        <label>上传音乐文件</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="bgmFile" accept="audio/*">
+                            <label for="bgmFile" class="file-input-label">
+                                点击选择音乐文件 (支持 mp3, flac, ogg 等格式，最大 200MB)
+                            </label>
+                        </div>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            提示：如果文件太大，可以使用音频转换工具压缩
+                        </small>
+                    </div>
+                    <button type="submit">更新背景音乐</button>
+                </form>
+            </div>
+            <!-- 个人信息 -->
+            <div class="section" id="profileSection">
+                <h2>👤 个人信息设置</h2>
+                <div class="alert" id="profileAlert"></div>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label>姓名</label>
+                        <input type="text" id="profileName" placeholder="您的名字">
+                    </div>
+                    <div class="form-group">
+                        <label>职业角色</label>
+                        <input type="text" id="profileRole" placeholder="例如：Unity个人开发者">
+                    </div>
+                    <div class="form-group">
+                        <label>座右铭</label>
+                        <input type="text" id="profileMotto" placeholder="您的座右铭">
+                    </div>
+                    <div class="form-group">
+                        <label>所在地</label>
+                        <input type="text" id="profileLocation" placeholder="例如：中国山东">
+                    </div>
+                    <button type="submit">保存个人信息</button>
+                </form>
+            </div>
+
+            <!-- 项目管理 -->
+            <div class="section" id="projectsSection">
+                <h2>📝 发布新项目</h2>
+                <div class="alert" id="projectAlert"></div>
+                <form id="projectForm">
+                    <div class="form-group">
+                        <label>项目标题</label>
+                        <input type="text" id="projectTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>项目分类</label>
+                        <select id="projectCategory" required>
+                            <option value="">选择分类</option>
+                            <option value="技术分享">技术分享</option>
+                            <option value="项目心得">项目心得</option>
+                            <option value="AI应用">AI应用</option>
+                            <option value="游戏开发">游戏开发</option>
+                            <option value="个人随笔">个人随笔</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>项目摘要</label>
+                        <textarea id="projectExcerpt" placeholder="简短描述项目内容..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>详细内容 (支持图文混排)</label>
+                        <textarea id="projectContent"></textarea>
+                    </div>
+                    <button type="submit">发布项目</button>
+                </form>
+
+                <div class="item-list">
+                    <h3>已发布项目</h3>
+                    <div id="projectList"></div>
+                </div>
+            </div>
+
+            <!-- 网站主页管理 -->
+            <div class="section" id="sitesSection">
+                <h2>🏠 网站主页管理</h2>
+                <div class="alert" id="siteAlert"></div>
+                <form id="siteForm">
+                    <div class="form-group">
+                        <label>网站名称</label>
+                        <input type="text" id="siteName" placeholder="例如：AI网站" required>
+                    </div>
+                    <div class="form-group">
+                        <label>网站链接</label>
+                        <input type="url" id="siteUrl" placeholder="https://example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>网站描述</label>
+                        <input type="text" id="siteDescription" placeholder="网站功能描述" required>
+                    </div>
+                    <div class="form-group">
+                        <label>网站图标 (emoji)</label>
+                        <input type="text" id="siteIcon" placeholder="🌐" maxlength="2" required>
+                    </div>
+                    <button type="submit">添加网站</button>
+                </form>
+
+                <h3 style="margin-top: 30px;">已添加的网站</h3>
+                <div class="card-grid" id="sitesList"></div>
+            </div>
+
+            <!-- 资源分享管理 -->
+            <div class="section" id="resourcesSection">
+                <h2>🚀 资源分享管理</h2>
+                <div class="alert" id="resourceAlert"></div>
+                <form id="resourceForm">
+                    <div class="form-group">
+                        <label>资源名称</label>
+                        <input type="text" id="resourceName" placeholder="例如：Unity插件" required>
+                    </div>
+                    <div class="form-group">
+                        <label>资源链接</label>
+                        <input type="url" id="resourceUrl" placeholder="https://example.com/resource" required>
+                    </div>
+                    <div class="form-group">
+                        <label>资源描述</label>
+                        <input type="text" id="resourceDescription" placeholder="资源内容描述" required>
+                    </div>
+                    <div class="form-group">
+                        <label>资源图标 (emoji)</label>
+                        <input type="text" id="resourceIcon" placeholder="📁" maxlength="2" required>
+                    </div>
+                    <button type="submit">添加资源</button>
+                </form>
+
+                <h3 style="margin-top: 30px;">已添加的资源</h3>
+                <div class="card-grid" id="resourcesList"></div>
+            </div>
+
+            <!-- 技能管理 -->
+            <div class="section" id="skillsSection">
+                <h2>⚡ 技能管理</h2>
+                <div class="alert" id="skillAlert"></div>
+                <form id="skillForm">
+                    <div class="form-group">
+                        <label>技能名称</label>
+                        <input type="text" id="skillName" placeholder="例如：JavaScript" required>
+                    </div>
+                    <button type="submit">添加技能</button>
+                </form>
+
+                <h3 style="margin-top: 30px;">已添加的技能</h3>
+                <div class="skills-container" id="skillsList"></div>
+            </div>
+
+            <!-- AI日报管理区域 -->
+            <div class="section" id="ai-reportsSection">
+                <h2>📰 AI日报管理</h2>
+
+                <div class="alert" id="aiReportAlert"></div>
+
+                <!-- API信息展示 -->
+                <div
+                    style="background: rgba(93, 213, 255, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 15px;">🔑 n8n推送配置</h3>
+                    <div
+                        style="background: #000; color: #0f0; padding: 15px; border-radius: 8px; font-family: monospace;">
+                        <div><strong>推送地址:</strong> <span id="n8n-push-url">加载中...</span></div>
+                        <div><strong>请求方法:</strong> POST</div>
+                        <div><strong>认证头部:</strong> <span id="n8n-auth-header">加载中...</span></div>
+                        <div><strong>推送时间:</strong> 每日 8:00</div>
+                    </div>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="card-grid" style="margin-bottom: 30px;">
+                    <div class="card-item">
+                        <div class="card-icon">📊</div>
+                        <h3>总期数</h3>
+                        <p id="adminTotalReports">0</p>
+                    </div>
+                    <div class="card-item">
+                        <div class="card-icon">📅</div>
+                        <h3>本月新增</h3>
+                        <p id="adminMonthlyReports">0</p>
+                    </div>
+                    <div class="card-item">
+                        <div class="card-icon">🔄</div>
+                        <h3>自动清理</h3>
+                        <p>20天前</p>
+                    </div>
+                </div>
+
+                <!-- 日报列表 -->
+                <div class="item-list">
+                    <h3>所有AI日报</h3>
+                    <div id="adminAiReportsList">
+                        <p style="text-align: center; opacity: 0.6;">正在加载...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全设置 -->
+            <div class="section" id="securitySection">
+                <h2>🔒 功能控制中心</h2>
+                <div class="alert" id="securityAlert"></div>
+
+                <!-- CloudFlare 验证模式选择 -->
+                <h3 style="margin-bottom: 10px;">🛡️ CloudFlare 验证模式</h3>
+                <div class="form-group"
+                    style="background: #f5f7fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                    <div style="margin-bottom: 15px;">
+                        <p style="color: #333; font-size: 14px; margin-bottom: 10px;">
+                            选择网站入口的验证方式：
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <!-- 关闭验证 -->
+                        <label
+                            style="display: flex; align-items: center; cursor: pointer; padding: 10px; border-radius: 8px; border: 2px solid transparent; transition: all 0.3s;"
+                            id="modeLabel0">
+                            <input type="radio" name="validationMode" value="0" id="validationMode0"
+                                style="margin-right: 8px;">
+                            <div>
+                                <div style="font-weight: 500; color: #ff6b6b;">🔴 关闭验证</div>
+                                <div style="font-size: 12px; color: #666;">直接进入网站</div>
+                            </div>
+                        </label>
+
+                        <!-- 弱验证 -->
+                        <label
+                            style="display: flex; align-items: center; cursor: pointer; padding: 10px; border-radius: 8px; border: 2px solid transparent; transition: all 0.3s;"
+                            id="modeLabel1">
+                            <input type="radio" name="validationMode" value="1" id="validationMode1"
+                                style="margin-right: 8px;">
+                            <div>
+                                <div style="font-weight: 500; color: #ffa726;">🟡 弱验证</div>
+                                <div style="font-size: 12px; color: #666;">仅前端验证</div>
+                            </div>
+                        </label>
+
+                        <!-- 强验证 -->
+                        <label
+                            style="display: flex; align-items: center; cursor: pointer; padding: 10px; border-radius: 8px; border: 2px solid transparent; transition: all 0.3s;"
+                            id="modeLabel2">
+                            <input type="radio" name="validationMode" value="2" id="validationMode2"
+                                style="margin-right: 8px;">
+                            <div>
+                                <div style="font-weight: 500; color: #4caf50;">🟢 强验证</div>
+                                <div style="font-size: 12px; color: #666;">双重验证，最安全</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- AI日报功能开关 -->
+                <h3 style="margin-bottom: 10px;">🤖 AI日报功能</h3>
+                <div class="form-group"
+                    style="background: #f5f7fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 500; font-size: 16px; color: #333; cursor: pointer;">
+                                启用AI日报功能
+                            </label>
+                            <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                                关闭后，访问者将无法查看AI日报，n8n推送接口仍然有效。
+                            </p>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="aiReportsSwitch" style="display: none;">
+                            <label for="aiReportsSwitch" class="toggleSwitch"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IP监控与封禁开关 -->
+                <h3 style="margin-bottom: 10px;">🔍 IP监控与封禁</h3>
+                <div class="form-group"
+                    style="background: #f5f7fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 500; font-size: 16px; color: #333; cursor: pointer;">
+                                启用IP安全监控
+                            </label>
+                            <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                                开启后，系统会监控 Nginx 日志并自动标记可疑IP地址。
+                            </p>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="ipMonitoringSwitch" style="display: none;">
+                            <label for="ipMonitoringSwitch" class="toggleSwitch"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分割线 -->
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+
+                <div class="alert" id="passwordAlert"></div>
+
+                <h3 style="margin-bottom: 20px;">修改登录密码</h3>
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label>当前密码</label>
+                        <input type="password" id="currentPassword" placeholder="请输入当前密码" required>
+                    </div>
+                    <div class="form-group">
+                        <label>新密码</label>
+                        <input type="password" id="newPassword" placeholder="请输入新密码（至少6位）" required>
+                    </div>
+                    <div class="form-group">
+                        <label>确认新密码</label>
+                        <input type="password" id="confirmPassword" placeholder="请再次输入新密码" required>
+                    </div>
+                    <button type="submit">修改密码</button>
+                </form>
+
+                <div
+                    style="margin-top: 30px; padding: 20px; background: rgba(255, 107, 107, 0.1); border-radius: 10px;">
+                    <h4 style="color: #ff6b6b; margin-bottom: 10px;">⚠️ 注意事项</h4>
+                    <ul style="list-style: none; padding: 0; color: #666;">
+                        <li>• 密码至少需要6个字符</li>
+                        <li>• 修改密码后需要重新登录</li>
+                        <li>• 请妥善保管您的密码</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- 评论管理 -->
+            <div class="section" id="commentsSection">
+                <h2>💬 评论管理</h2>
+
+                <div class="alert" id="commentManagementAlert"></div>
+
+                <div class="tabs" style="margin-bottom: 20px;">
+                    <div class="tab active" onclick="showCommentTab('all')">所有评论</div>
+                    <div class="tab" onclick="showCommentTab('banned')">IP黑名单</div>
+                </div>
+
+                <div id="allCommentsTab">
+                    <div id="commentsList"></div>
+                </div>
+
+                <h3 style="margin-top: 40px; margin-bottom: 20px; color: #333;">手动封禁IP</h3>
+                <form id="manualBanForm" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="manualBanIp">IP 地址</label>
+                        <input type="text" id="manualBanIp" placeholder="例如：192.168.1.1" required>
+                    </div>
+                    <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                        <label for="manualBanReason">封禁原因 (可选)</label>
+                        <input type="text" id="manualBanReason" placeholder="例如：发布垃圾评论">
+                    </div>
+                    <button type="submit" style="width: auto; padding: 12px 24px; margin-bottom: 0;">确认封禁</button>
+                </form>
+
+                <div id="bannedIpsTab" style="display: none;">
+                    <h3 style="margin-bottom: 20px; color: #333;">已封禁IP列表</h3>
+                    <div id="bannedIpsList"></div>
+                </div>
+            </div>
+            <div class="section" id="monitoringSection">
+                <h2>🛡️ 安全监控 (可疑访问IP)</h2>
+                <div class="alert" id="monitoringAlert"></div>
+                <div id="suspiciousIpsList">
+                    <p style="text-align: center; opacity: 0.6;">正在加载可疑访问记录...</p>
+                </div>
+            </div>
+            <div class="section" id="configurationsSection">
+                <h2>⚙️ 环境设置</h2>
+                <div class="alert" id="configAlert"></div>
+                <p style="margin-bottom: 20px; color: #666;">
+                    在这里配置所有与部署环境相关的密钥和路径。<strong>注意：修改后请点击下方的“保存所有设置”按钮。</strong></p>
+
+                <form id="configForm">
+                    <!-- 域名与安全 -->
+                    <h3>域名与安全</h3>
+                    <div class="form-group">
+                        <label>后端URL (例如: https://your-api.com)</label>
+                        <input type="text" id="config-backend-url" placeholder="前端访问API的完整地址">
+                        <small>用于生成图片等资源的完整访问路径。</small>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label>JWT密钥(非登陆密码)</label>
+                        <input type="password" id="config-jwt-secret" placeholder="用于后台登录认证的复杂字符串">
+                        <span class="toggle-password" onclick="togglePasswordVisibility('config-jwt-secret')">👁️</span>
+                    </div>
+
+                    <!-- Cloudflare -->
+                    <h3>Cloudflare Turnstile</h3>
+                    <div class="form-group" style="position: relative;">
+                        <label>Site Key (公钥)</label>
+                        <input type="text" id="config-cf-site-key" placeholder="粘贴你的Turnstile Site Key">
+                        <span class="toggle-password"
+                            onclick="togglePasswordVisibility('config-cf-site-key')">👁️</span>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label>Secret Key (私钥)</label>
+                        <input type="password" id="config-cf-secret-key" placeholder="粘贴你的Turnstile Secret Key">
+                        <span class="toggle-password"
+                            onclick="togglePasswordVisibility('config-cf-secret-key')">👁️</span>
+                    </div>
+
+                    <!-- Nginx 路径 （Windows） -->
+                    <h3>Nginx 路径 (IP封禁功能需要)</h3>
+                    <div class="form-group">
+                        <label>Nginx可执行文件路径</label>
+                        <input type="text" id="config-nginx-exe-path" placeholder="例如: C:\nginx\nginx.exe">
+                        <small class="restart-notice">修改后需重启服务器生效</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Nginx工作目录</label>
+                        <input type="text" id="config-nginx-cwd" placeholder="例如: C:\nginx">
+                        <small class="restart-notice">修改后需重启服务器生效</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Nginx错误日志路径</label>
+                        <input type="text" id="config-nginx-error-log-path" placeholder="例如: C:\\nginx\\logs\\error.log">
+                        <small class="restart-notice">修改后需重启服务器生效</small>
+                    </div>
+                    <div class="form-group">
+                        <label>IP黑名单文件路径</label>
+                        <input type="text" id="config-nginx-block-ip-file"
+                            placeholder="例如: C:\\nginx\\conf\\blockips.conf">
+                        <small class="restart-notice">修改后需重启服务器生效</small>
+                    </div>
+
+                    <!-- 其他 -->
+                    <h3>AI日报</h3>
+                    <div class="form-group" style="position: relative;">
+                        <label>AI日报推送API密钥</label>
+                        <input type="password" id="config-ai-reports-api-key" placeholder="用于n8n等工具推送的密钥">
+                        <span class="toggle-password"
+                            onclick="togglePasswordVisibility('config-ai-reports-api-key')">👁️</span>
+                    </div>
+
+                    <button type="submit">保存所有设置</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h3>网站预览</h3>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="refresh-btn" onclick="refreshPreview()">
+                        <span style="font-size: 16px;">🔄</span>
+                        刷新页面
+                    </button>
+                    <span class="preview-close" onclick="closePreview()">&times;</span>
+                </div>
+            </div>
+            <iframe class="preview-iframe" id="previewIframe"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+        let authToken = localStorage.getItem('authToken');
+        let currentEditingProjectId = null;
+        //console.log('页面加载时的token:', authToken);
+
+
+        // 检查登录状态
+        if (authToken) {
+            showAdmin();
+        }
+
+        // 登录
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    showAdmin();
+                } else {
+                    showAlert('loginError', data.message || '登录失败');
+                }
+            } catch (error) {
+                showAlert('loginError', '网络错误，请重试');
+            }
+        });
+
+        function initializeEditor() {
+            tinymce.init({
+                selector: '#projectContent', // 绑定到 textarea
+                language: 'zh_CN',
+                plugins: 'image link lists code media table wordcount',
+                toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link image media table | code',
+                height: 450,
+                menubar: 'file edit view insert format tools table help',
+
+                // 配置图片上传处理
+                images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
+
+                    fetch(`${API_BASE}/upload/image`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: formData
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error(`HTTP 错误! 状态: ${response.status}`);
+                            return response.json();
+                        })
+                        .then(json => {
+                            if (!json || typeof json.imageUrl != 'string') throw new Error('从服务器返回的JSON无效');
+                            resolve(json.imageUrl);
+                        })
+                        .catch(err => {
+                            console.error('图片上传失败:', err);
+                            showAlert('projectAlert', '图片上传失败: ' + err.message);
+                            reject('图片上传失败: ' + err.message);
+                        });
+                })
+            });
+        }
+        // 显示管理界面
+        function showAdmin() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('adminContainer').style.display = 'block';
+            loadAllData();
+
+            if (tinymce.get('projectContent')) {
+                tinymce.get('projectContent').setContent('');
+            } else {
+                initializeEditor();
+            }
+
+            // 初始化三个功能开关
+            initializeFunctionSwitches();
+        }
+
+        function initializeFunctionSwitches() {
+            // 验证模式选择器
+            const validationModeRadios = document.querySelectorAll('input[name="validationMode"]');
+            validationModeRadios.forEach((radio, index) => {
+                radio.addEventListener('change', async function () {
+                    if (this.checked) {
+                        const mode = parseInt(this.value);
+                        const modeNames = ['关闭验证', '弱验证', '强验证'];
+                        await updateFunctionSetting('turnstile_validation_mode', mode, `CloudFlare验证模式(${modeNames[mode]})`);
+
+                        // 更新选中样式
+                        document.querySelectorAll('[id^="modeLabel"]').forEach(label => {
+                            label.style.border = '2px solid transparent';
+                            label.style.background = 'transparent';
+                        });
+                        document.getElementById(`modeLabel${mode}`).style.border = '2px solid #667eea';
+                        document.getElementById(`modeLabel${mode}`).style.background = 'rgba(102, 126, 234, 0.1)';
+                    }
+                });
+            });
+
+            // AI日报开关
+            const aiReportsSwitch = document.getElementById('aiReportsSwitch');
+            if (aiReportsSwitch) {
+                aiReportsSwitch.addEventListener('change', async function () {
+                    await updateFunctionSetting('ai_reports_enabled', this.checked ? 1 : 0, 'AI日报功能');
+                });
+            }
+
+            // IP监控开关
+            const ipMonitoringSwitch = document.getElementById('ipMonitoringSwitch');
+            if (ipMonitoringSwitch) {
+                ipMonitoringSwitch.addEventListener('change', async function () {
+                    await updateFunctionSetting('ip_monitoring_enabled', this.checked ? 1 : 0, 'IP监控');
+                });
+            }
+        }
+        // 统一的功能设置更新函数
+        async function updateFunctionSetting(settingKey, value, featureName) {
+            // 确保验证模式是整数
+            if (settingKey === 'turnstile_validation_mode') {
+                value = parseInt(value);
+                console.log('[设置更新] 准备更新验证模式为:', value, '(类型:', typeof value, ')');
+            }
+
+            const payload = { [settingKey]: value };
+
+            // 添加调试信息
+            console.log('准备发送的数据:', payload);
+            console.log('设置键:', settingKey);
+            console.log('设置值:', value, '类型:', typeof value);
+
+            try {
+                const response = await fetch(`${API_BASE}/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const responseText = await response.text();
+                console.log('服务器响应:', responseText);
+
+                try {
+                    const responseData = JSON.parse(responseText);
+                    if (response.ok) {
+                        showAlert('securityAlert', `${featureName}已更新！`, true);
+
+                        // 验证设置是否真的保存了
+                        setTimeout(async () => {
+                            const checkResponse = await fetch(`${API_BASE}/settings`);
+                            const checkData = await checkResponse.json();
+                            console.log('验证保存结果:', settingKey, '=', checkData[settingKey]);
+
+                            // 如果是验证模式，显示当前状态
+                            if (settingKey === 'turnstile_validation_mode') {
+                                const modeNames = ['关闭验证', '弱验证', '强验证'];
+                                console.log('当前验证模式:', modeNames[checkData[settingKey]] || '未知');
+                            }
+                        }, 500);
+                    } else {
+                        showAlert('securityAlert', `${featureName}设置失败：${responseData.message}`);
+                    }
+                } catch (e) {
+                    console.error('解析响应失败:', e);
+                    showAlert('securityAlert', `${featureName}设置失败，服务器响应异常`);
+                }
+            } catch (error) {
+                console.error('请求失败:', error);
+                showAlert('securityAlert', `网络错误，${featureName}设置失败`);
+            }
+        }
+
+        // 加载所有数据
+        function loadAllData() {
+            loadSettings();
+            loadProjects();
+            loadSites();
+            loadResources();
+            loadSkills();
+            loadComments();
+            loadBannedIps();
+            loadSuspiciousIps();
+            loadAdminAIReports();
+            loadConfigurations();
+        }
+
+        // 监听手动封禁表单的提交事件
+        document.getElementById('manualBanForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // 阻止表单默认的刷新页面的行为
+
+            const ipAddress = document.getElementById('manualBanIp').value.trim();
+            const reason = document.getElementById('manualBanReason').value.trim() || '手动封禁'; // 如果原因为空，给个默认值
+
+            // 简单的IP地址格式校验
+            const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+            if (!ipRegex.test(ipAddress)) {
+                showAlert('commentManagementAlert', '请输入一个有效的IPv4地址');
+                return;
+            }
+
+            // banIP 函数内部会处理 API 调用和后续的界面刷新
+            await banIP(ipAddress, reason);
+
+            // 清空输入框
+            document.getElementById('manualBanIp').value = '';
+            document.getElementById('manualBanReason').value = '';
+        });
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('authToken');
+            location.reload();
+        }
+
+        // 切换选项卡
+        function switchTab(tabName) {
+            // 更新标签状态
+            document.querySelectorAll('.tabs .tab').forEach(tab => { // 限定范围，避免影响子标签
+                tab.classList.remove('active');
+            });
+
+            const mainTabs = document.querySelector('.admin-content > .tabs');
+            mainTabs.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // 显示对应内容
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(`${tabName}Section`).classList.add('active');
+
+            if (tabName === 'comments') {
+                showCommentTab('all');
+            }
+        }
+
+        // 显示提示
+        function showAlert(id, message, isSuccess = false) {
+            const alert = document.getElementById(id);
+            alert.textContent = message;
+            alert.className = isSuccess ? 'alert alert-success' : 'alert alert-error';
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 3000);
+        }
+
+        function refreshPreview() {
+            const iframe = document.getElementById('previewIframe');
+            iframe.src = iframe.src; // 重新加载
+        }
+
+        // 加载设置
+        async function loadSettings() {
+            try {
+                const response = await fetch(`${API_BASE}/settings`);
+                const settings = await response.json();
+
+                // 原有设置加载...
+                document.getElementById('profileName').value = settings.profile_name || '';
+                document.getElementById('profileRole').value = settings.profile_role || '';
+                document.getElementById('profileMotto').value = settings.profile_motto || '';
+                document.getElementById('profileLocation').value = settings.profile_location || '';
+
+                const currentBgmName = document.getElementById('currentBgmName');
+                if (currentBgmName) {
+                    currentBgmName.textContent = settings.bgm_name || '未设置背景音乐';
+                }
+
+                // 设置验证模式
+                const validationMode = settings.turnstile_validation_mode !== undefined
+                    ? parseInt(settings.turnstile_validation_mode)
+                    : 2;
+                console.log('加载的验证模式:', validationMode, '原始值:', settings.turnstile_validation_mode);
+
+                const modeRadio = document.getElementById(`validationMode${validationMode}`);
+                if (modeRadio) {
+                    modeRadio.checked = true;
+                    // 设置选中样式
+                    document.querySelectorAll('[id^="modeLabel"]').forEach(label => {
+                        label.style.border = '2px solid transparent';
+                        label.style.background = 'transparent';
+                    });
+                    document.getElementById(`modeLabel${validationMode}`).style.border = '2px solid #667eea';
+                    document.getElementById(`modeLabel${validationMode}`).style.background = 'rgba(102, 126, 234, 0.1)';
+                }
+
+                const aiReportsSwitch = document.getElementById('aiReportsSwitch');
+                if (aiReportsSwitch) {
+                    aiReportsSwitch.checked = settings.ai_reports_enabled !== 0;
+                }
+
+                const ipMonitoringSwitch = document.getElementById('ipMonitoringSwitch');
+                if (ipMonitoringSwitch) {
+                    ipMonitoringSwitch.checked = settings.ip_monitoring_enabled !== 0;
+                }
+
+            } catch (error) {
+                console.error('加载设置失败:', error);
+            }
+        }
+        // 上传背景音乐
+        document.getElementById('bgmForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 调试：检查token
+            //console.log('当前authToken:', authToken);
+            //console.log('localStorage中的token:', localStorage.getItem('authToken'));
+
+            // 如果token不一致，更新它
+            if (!authToken && localStorage.getItem('authToken')) {
+                authToken = localStorage.getItem('authToken');
+                console.log('从localStorage恢复token');
+            }
+
+            const formData = new FormData();
+            const bgmFile = document.getElementById('bgmFile').files[0];
+            const bgmName = document.getElementById('bgmName').value;
+
+            if (!bgmFile) {
+                showAlert('bgmAlert', '请选择音乐文件');
+                return;
+            }
+
+            // 确保token存在
+            if (!authToken) {
+                showAlert('bgmAlert', '登录已过期，请重新登录');
+                console.error('No auth token available');
+                // 自动跳转到登录页
+                setTimeout(() => logout(), 2000);
+                return;
+            }
+
+            formData.append('bgm', bgmFile);
+            formData.append('bgmName', bgmName || bgmFile.name);
+
+            console.log('准备上传文件:', {
+                fileName: bgmFile.name,
+                fileSize: bgmFile.size,
+                bgmName: bgmName || bgmFile.name,
+                token: authToken.substring(0, 20) + '...' // 只显示部分token
+            });
+
+            try {
+                const response = await fetch(`${API_BASE}/settings/bgm`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                // 显示响应信息
+                console.log('响应状态:', response.status);
+                console.log('响应头:', response.headers);
+
+                const data = await response.json();
+                console.log('响应数据:', data);
+
+                if (response.ok) {
+                    showAlert('bgmAlert', `背景音乐更新成功！文件大小：${data.fileSize}`, true);
+                    document.getElementById('bgmForm').reset();
+                    // 更新当前BGM名称显示
+                    const currentBgmName = document.getElementById('currentBgmName');
+                    if (currentBgmName) {
+                        currentBgmName.textContent = data.bgmName;
+                    }
+                } else {
+                    showAlert('bgmAlert', data.message || '更新失败，请重试');
+
+                    // 如果是token问题，提供更详细的信息
+                    if (response.status === 401) {
+                        console.error('Token验证失败，可能需要重新登录');
+                        console.log('当前token:', authToken);
+                    }
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showAlert('bgmAlert', '上传失败，请检查网络');
+            }
+        });
+        // 更新个人信息
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                profile_name: document.getElementById('profileName').value,
+                profile_role: document.getElementById('profileRole').value,
+                profile_motto: document.getElementById('profileMotto').value,
+                profile_location: document.getElementById('profileLocation').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showAlert('profileAlert', '个人信息更新成功！', true);
+                } else {
+                    showAlert('profileAlert', '更新失败，请重试');
+                }
+            } catch (error) {
+                showAlert('profileAlert', '保存失败，请检查网络');
+            }
+        });
+
+        // 发布项目
+        document.getElementById('projectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 从 TinyMCE 获取内容
+            const content = tinymce.get('projectContent').getContent();
+
+            const data = {
+                title: document.getElementById('projectTitle').value,
+                category: document.getElementById('projectCategory').value,
+                excerpt: document.getElementById('projectExcerpt').value,
+                content: content // 使用从编辑器获取的HTML内容
+            };
+
+            const isUpdating = currentEditingProjectId !== null;
+            const url = isUpdating ? `${API_BASE}/projects/${currentEditingProjectId}` : `${API_BASE}/projects`;
+            const method = isUpdating ? 'PUT' : 'POST';
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('projectAlert', result.message || `项目${isUpdating ? '更新' : '发布'}成功！`, true);
+                    cancelEdit(); // 重置表单和状态
+                    loadProjects(); // 刷新列表
+                } else {
+                    showAlert('projectAlert', result.message || `${isUpdating ? '更新' : '发布'}失败，请重试`);
+                }
+            } catch (error) {
+                showAlert('projectAlert', `${isUpdating ? '更新' : '发布'}失败，请检查网络`);
+            }
+        });
+
+        // 加载项目列表
+        async function loadProjects() {
+            try {
+                const response = await fetch(`${API_BASE}/projects`);
+                const projects = await response.json();
+
+                const list = document.getElementById('projectList');
+                list.innerHTML = '';
+
+                projects.forEach(project => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.innerHTML = `
+                    <div class="item-info">
+                        <h3>${project.title}</h3>
+                        <p>${project.category} - ${new Date(project.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="editProject(${project.id})">编辑</button>
+                        <button class="btn-delete" onclick="deleteProject(${project.id})">删除</button>
+                    </div>
+                `;
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                console.error('加载项目失败:', error);
+            }
+        }
+
+        // 加载评论列表
+        function cancelEdit() {
+            currentEditingProjectId = null;
+            const form = document.getElementById('projectForm');
+            form.reset();
+            tinymce.get('projectContent').setContent('');
+
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.textContent = '发布项目';
+
+            const cancelButton = document.getElementById('cancelEditBtn');
+            if (cancelButton) {
+                cancelButton.remove();
+            }
+        }
+
+        // 编辑项目
+        async function editProject(id) {
+            try {
+                if (currentEditingProjectId) {
+                    cancelEdit(); // 如果已在编辑模式，先取消
+                }
+
+                const response = await fetch(`${API_BASE}/projects/${id}`);
+                if (!response.ok) throw new Error('无法获取项目数据');
+                const project = await response.json();
+
+                // 填充表单
+                document.getElementById('projectTitle').value = project.title;
+                document.getElementById('projectCategory').value = project.category;
+                document.getElementById('projectExcerpt').value = project.excerpt;
+                tinymce.get('projectContent').setContent(project.content || '');
+
+                currentEditingProjectId = id; // 设置编辑状态
+
+                // 更改按钮文本并添加“取消”按钮
+                const form = document.getElementById('projectForm');
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.textContent = '更新项目';
+
+                let cancelButton = document.getElementById('cancelEditBtn');
+                if (!cancelButton) {
+                    cancelButton = document.createElement('button');
+                    cancelButton.id = 'cancelEditBtn';
+                    cancelButton.textContent = '取消编辑';
+                    cancelButton.type = 'button';
+                    cancelButton.style.marginTop = '10px';
+                    cancelButton.style.background = '#6c757d';
+                    cancelButton.onclick = cancelEdit;
+                    submitButton.parentNode.insertBefore(cancelButton, submitButton.nextSibling);
+                }
+
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                showAlert('projectAlert', `进入编辑模式失败: ${error.message}`);
+            }
+        }
+
+        // 删除项目
+        async function deleteProject(id) {
+            if (!confirm('确定要删除这个项目吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/projects/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    loadProjects();
+                    loadComments();
+                    showAlert('projectAlert', '项目及关联评论已删除！', true);
+                }
+            } catch (error) {
+                alert('删除失败，请重试');
+            }
+        }
+
+        // 添加网站
+        document.getElementById('siteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                name: document.getElementById('siteName').value,
+                url: document.getElementById('siteUrl').value,
+                description: document.getElementById('siteDescription').value,
+                icon: document.getElementById('siteIcon').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/sites`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showAlert('siteAlert', '网站添加成功！', true);
+                    document.getElementById('siteForm').reset();
+                    loadSites();
+                } else {
+                    showAlert('siteAlert', '添加失败，请重试');
+                }
+            } catch (error) {
+                showAlert('siteAlert', '网络错误，请稍后重试');
+            }
+        });
+
+        // 加载网站列表
+        async function loadSites() {
+            try {
+                const response = await fetch(`${API_BASE}/sites`);
+                const sites = await response.json();
+
+                const list = document.getElementById('sitesList');
+                list.innerHTML = '';
+
+                sites.forEach(site => {
+                    const card = document.createElement('div');
+                    card.className = 'card-item';
+                    card.innerHTML = `
+                        <div class="card-actions">
+                            <button class="btn-delete-small" onclick="deleteSite(${site.id})">删除</button>
+                        </div>
+                        <div class="card-icon">${site.icon}</div>
+                        <h3>${site.name}</h3>
+                        <p>${site.description}</p>
+                        <a href="${site.url}" target="_blank" style="color: #667eea;">访问网站</a>
+                    `;
+                    list.appendChild(card);
+                });
+            } catch (error) {
+                console.error('加载网站失败:', error);
+            }
+        }
+
+        // 删除网站
+        async function deleteSite(id) {
+            if (!confirm('确定要删除这个网站吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/sites/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    loadSites();
+                }
+            } catch (error) {
+                alert('删除失败，请重试');
+            }
+        }
+
+        // 添加资源
+        document.getElementById('resourceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                name: document.getElementById('resourceName').value,
+                url: document.getElementById('resourceUrl').value,
+                description: document.getElementById('resourceDescription').value,
+                icon: document.getElementById('resourceIcon').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/resources`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showAlert('resourceAlert', '资源添加成功！', true);
+                    document.getElementById('resourceForm').reset();
+                    loadResources();
+                } else {
+                    showAlert('resourceAlert', '添加失败，请重试');
+                }
+            } catch (error) {
+                showAlert('resourceAlert', '网络错误，请稍后重试');
+            }
+        });
+
+        // 加载资源列表
+        async function loadResources() {
+            try {
+                const response = await fetch(`${API_BASE}/resources`);
+                const resources = await response.json();
+
+                const list = document.getElementById('resourcesList');
+                list.innerHTML = '';
+
+                resources.forEach(resource => {
+                    const card = document.createElement('div');
+                    card.className = 'card-item';
+                    card.innerHTML = `
+                        <div class="card-actions">
+                            <button class="btn-delete-small" onclick="deleteResource(${resource.id})">删除</button>
+                        </div>
+                        <div class="card-icon">${resource.icon}</div>
+                        <h3>${resource.name}</h3>
+                        <p>${resource.description}</p>
+                        <a href="${resource.url}" target="_blank" style="color: #667eea;">查看资源</a>
+                    `;
+                    list.appendChild(card);
+                });
+            } catch (error) {
+                console.error('加载资源失败:', error);
+            }
+        }
+
+        // 删除资源
+        async function deleteResource(id) {
+            if (!confirm('确定要删除这个资源吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/resources/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    loadResources();
+                }
+            } catch (error) {
+                alert('删除失败，请重试');
+            }
+        }
+
+        // 添加技能
+        document.getElementById('skillForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                name: document.getElementById('skillName').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showAlert('skillAlert', '技能添加成功！', true);
+                    document.getElementById('skillForm').reset();
+                    loadSkills();
+                } else {
+                    showAlert('skillAlert', '添加失败，请重试');
+                }
+            } catch (error) {
+                showAlert('skillAlert', '网络错误，请稍后重试');
+            }
+        });
+
+        // 加载技能列表
+        async function loadSkills() {
+            try {
+                const response = await fetch(`${API_BASE}/skills`);
+                const skills = await response.json();
+
+                const list = document.getElementById('skillsList');
+                list.innerHTML = '';
+
+                skills.forEach(skill => {
+                    const tag = document.createElement('div');
+                    tag.className = 'skill-tag';
+                    tag.innerHTML = `
+                        ${skill.name}
+                        <span class="delete-skill" onclick="deleteSkill(${skill.id})">×</span>
+                    `;
+                    list.appendChild(tag);
+                });
+            } catch (error) {
+                console.error('加载技能失败:', error);
+            }
+        }
+
+        // 删除技能
+        async function deleteSkill(id) {
+            if (!confirm('确定要删除这个技能吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/skills/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    loadSkills();
+                }
+            } catch (error) {
+                alert('删除失败，请重试');
+            }
+        }
+
+        // 修改密码
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 验证新密码
+            if (newPassword !== confirmPassword) {
+                showAlert('passwordAlert', '两次输入的新密码不一致');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showAlert('passwordAlert', '新密码至少需要6个字符');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/change-password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('passwordAlert', '密码修改成功！3秒后将跳转到登录页面...', true);
+                    document.getElementById('passwordForm').reset();
+
+                    // 3秒后退出登录
+                    setTimeout(() => {
+                        logout();
+                    }, 3000);
+                } else {
+                    showAlert('passwordAlert', data.message || '密码修改失败');
+                }
+            } catch (error) {
+                showAlert('passwordAlert', '网络错误，请稍后重试');
+            }
+        });
+
+        // 打开预览
+        function openPreview() {
+            const modal = document.getElementById('previewModal');
+            const iframe = document.getElementById('previewIframe');
+            iframe.src = '/blogs.html';
+            modal.style.display = 'block';
+        }
+
+        // 关闭预览
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('previewIframe').src = '';
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('previewModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closePreview();
+            }
+        });
+        // 评论标签切换
+        function showCommentTab(tab) {
+            if (tab === 'all') {
+                document.getElementById('allCommentsTab').style.display = 'block';
+                document.getElementById('bannedIpsTab').style.display = 'none';
+            } else {
+                document.getElementById('allCommentsTab').style.display = 'none';
+                document.getElementById('bannedIpsTab').style.display = 'block';
+            }
+
+            // 更新标签状态
+            const tabs = document.querySelectorAll('#commentsSection .tabs .tab');
+            tabs.forEach((t, index) => {
+                t.classList.toggle('active', (tab === 'all' && index === 0) || (tab === 'banned' && index === 1));
+            });
+        }
+
+        // 加载评论列表
+        async function loadComments() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/comments`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const comments = await response.json();
+
+                const list = document.getElementById('commentsList');
+
+                if (comments.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; opacity: 0.6;">暂无评论</p>';
+                    return;
+                }
+
+                list.innerHTML = comments.map(comment => `
+            <div class="list-item" style="flex-direction: column; align-items: stretch;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div>
+                        <strong>${comment.nickname}</strong> 
+                        ${comment.email ? `(${comment.email})` : ''}
+                        <span style="color: #ff6b6b; margin-left: 10px;">IP: ${comment.ip_address}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-delete" onclick="deleteComment(${comment.id})">删除</button>
+                        <button class="btn-edit" style="background: #ff6b6b;" onclick="banIP('${comment.ip_address}')">封禁IP</button>
+                    </div>
+                </div>
+                <div style="color: #666; font-size: 14px; margin-bottom: 5px;">
+                    项目：${comment.project_title} | 时间：${new Date(comment.created_at).toLocaleString('zh-CN')}
+                </div>
+                <div style="background: #f5f7fa; padding: 10px; border-radius: 5px;">
+                    ${comment.content}
+                </div>
+            </div>
+        `).join('');
+            } catch (error) {
+                console.error('加载评论失败:', error);
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(id) {
+            if (!confirm('确定要删除这条评论吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/comments/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    showAlert('commentManagementAlert', '删除成功', true);
+                    loadComments(); // 重新加载评论列表
+
+                    // 重新加载项目列表以更新评论数量
+                    if (typeof loadProjects === 'function') {
+                        loadProjects();
+                    }
+                } else {
+                    const error = await response.json();
+                    showAlert('commentManagementAlert', error.message || '删除失败');
+                }
+            } catch (error) {
+                showAlert('commentManagementAlert', '删除失败，网络错误');
+            }
+        }
+
+        // 封禁IP
+        async function banIP(ip, reason) { //接收 reason 参数
+            // 如果 reason 未提供或为空，则设置一个默认值
+            const banReason = reason || '违规操作';
+
+            if (!confirm(`确定要封禁IP: ${ip} 吗？\n原因: ${banReason}`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/ban-ip`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    // 发送给后端的键应该是 reason
+                    body: JSON.stringify({ ip_address: ip, reason: banReason })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('commentManagementAlert', data.message || 'IP封禁成功', true);
+                    loadComments();
+                    loadBannedIps();
+                    // 封禁成功后，也应该刷新可疑IP列表
+                    loadSuspiciousIps();
+                } else {
+                    showAlert('commentManagementAlert', data.message || 'IP封禁失败');
+                }
+            } catch (error) {
+                showAlert('commentManagementAlert', '网络错误，IP封禁失败');
+            }
+        }
+
+        // 加载封禁IP列表
+        async function loadBannedIps() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/banned-ips`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const ips = await response.json();
+
+                const list = document.getElementById('bannedIpsList');
+
+                if (ips.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; opacity: 0.6;">暂无封禁IP</p>';
+                    return;
+                }
+
+                list.innerHTML = ips.map(ip => `
+            <div class="list-item">
+                <div class="item-info">
+                    <h3>${ip.ip_address}</h3>
+                    <p>原因：${ip.reason || '未说明'} | 封禁时间：${new Date(ip.banned_at).toLocaleString('zh-CN')}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-edit" onclick="unbanIP('${ip.ip_address}')">解除封禁</button>
+                </div>
+            </div>
+        `).join('');
+            } catch (error) {
+                console.error('加载封禁列表失败:', error);
+            }
+        }
+
+        // 解除封禁
+        async function unbanIP(ip) {
+            if (!confirm('确定要解除该IP的封禁吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/banned-ips/${encodeURIComponent(ip)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    showAlert('commentManagementAlert', '解除封禁成功', true);
+                    loadBannedIps();
+                }
+            } catch (error) {
+                showAlert('commentManagementAlert', '解除封禁失败');
+            }
+        }
+
+        // 加载可疑IP列表的函数
+        async function loadSuspiciousIps() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/suspicious-ips`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const ips = await response.json();
+
+                const list = document.getElementById('suspiciousIpsList');
+                if (ips.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; opacity: 0.6;">太棒了！目前没有发现可疑访问。</p>';
+                    return;
+                }
+
+                list.innerHTML = ips.map(ip => `
+            <div class="list-item">
+                <div class="item-info">
+                    <h3>IP: ${ip.ip_address}</h3>
+                    <p>原因: ${ip.reason} | 触发次数: ${ip.hit_count}</p>
+                    <p>最后发现时间: ${new Date(ip.last_seen).toLocaleString('zh-CN')}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-delete" onclick="banSuspiciousIP('${ip.ip_address}', '${ip.reason}')">封禁</button>
+                    <button class="btn-edit" style="background: #777;" onclick="ignoreSuspiciousIP(${ip.id})">忽略</button>
+                </div>
+            </div>
+        `).join('');
+            } catch (error) {
+                console.error('加载可疑IP失败:', error);
+            }
+        }
+
+        // 封禁可疑IP (调用已有的 banIP 函数)
+        function banSuspiciousIP(ip, reason) {
+            if (confirm(`确定要封禁IP: ${ip} 吗？`)) {
+                // 这里我们复用您已有的 banIP 函数，但需要稍微改造一下，让它能从这个新界面调用
+                banIP(ip, reason);
+            }
+        }
+
+        // 忽略可疑IP
+        async function ignoreSuspiciousIP(id) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/suspicious-ips/${id}/ignore`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    showAlert('monitoringAlert', '已忽略该IP', true);
+                    loadSuspiciousIps(); // 重新加载列表
+                } else {
+                    showAlert('monitoringAlert', '操作失败');
+                }
+            } catch (error) {
+                showAlert('monitoringAlert', '网络错误');
+            }
+        }
+        // 加载管理员AI日报列表
+        async function loadAdminAIReports() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/ai-reports`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const reports = await response.json();
+
+                renderAdminReportsList(reports);
+                updateAdminReportsStats(reports);
+
+            } catch (error) {
+                console.error('加载AI日报失败:', error);
+                document.getElementById('adminAiReportsList').innerHTML =
+                    '<p style="text-align: center; color: #ff6b6b;">加载失败</p>';
+            }
+        }
+
+        // 渲染管理员日报列表
+        function renderAdminReportsList(reports) {
+            const container = document.getElementById('adminAiReportsList');
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.6;">暂无AI日报</p>';
+                return;
+            }
+
+            container.innerHTML = reports.map(report => `
+        <div class="list-item" style="flex-direction: column; align-items: stretch;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <div>
+                    <strong>${report.title}</strong>
+                    <span style="margin-left: 15px; color: #5dd5ff;">📅 ${report.report_date}</span>
+                    <span style="margin-left: 10px; color: #666;">🔥 ${report.highlights_count}个亮点</span>
+                    ${report.status === 0 ? '<span style="color: #ff6b6b; margin-left: 10px;">[已删除]</span>' : ''}
+                </div>
+                <div class="item-actions">
+                    <button class="btn-edit" onclick="previewAIReport('${report.report_date}')">预览</button>
+                    ${report.status === 1 ?
+                    `<button class="btn-delete" onclick="deleteAIReport(${report.id})">删除</button>` :
+                    `<button class="btn-edit" onclick="restoreAIReport(${report.id})">恢复</button>`
+                }
+                </div>
+            </div>
+            <div style="color: #666; font-size: 14px;">
+                ${report.summary.substring(0, 100)}${report.summary.length > 100 ? '...' : ''}
+            </div>
+            <div style="color: #999; font-size: 12px; margin-top: 5px;">
+                创建时间：${new Date(report.created_at).toLocaleString('zh-CN')}
+            </div>
+        </div>
+    `).join('');
+        }
+
+        // 更新管理员统计信息
+        function updateAdminReportsStats(reports) {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+
+            const activeReports = reports.filter(r => r.status === 1);
+            const monthlyCount = activeReports.filter(report => {
+                const reportDate = new Date(report.report_date);
+                return reportDate.getMonth() + 1 === currentMonth &&
+                    reportDate.getFullYear() === currentYear;
+            }).length;
+
+            document.getElementById('adminTotalReports').textContent = activeReports.length;
+            document.getElementById('adminMonthlyReports').textContent = monthlyCount;
+        }
+
+        // 预览AI日报
+        async function previewAIReport(reportDate) {
+            try {
+                const response = await fetch(`${API_BASE}/ai-reports/${reportDate}`);
+                const report = await response.json();
+
+                if (response.ok) {
+                    // 创建预览窗口
+                    const previewWindow = window.open('', '_blank', 'width=800,height=600');
+                    previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${report.title}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                        .header { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+                        .content { max-width: 800px; }
+                        h3 { color: #333; border-left: 4px solid #5dd5ff; padding-left: 10px; }
+                        .news-item { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+                        .news-item h4 { margin-bottom: 10px; color: #444; }
+                        a { color: #5dd5ff; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>${report.title}</h1>
+                        <p>📅 ${report.report_date} | 🔥 ${report.highlights_count}个亮点</p>
+                    </div>
+                    <div class="content">
+                        ${report.content}
+                    </div>
+                </body>
+                </html>
+            `);
+                } else {
+                    showAlert('aiReportAlert', '预览失败');
+                }
+            } catch (error) {
+                showAlert('aiReportAlert', '预览失败，网络错误');
+            }
+        }
+
+        // 删除AI日报
+        async function deleteAIReport(id) {
+            if (!confirm('确定要删除这期AI日报吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/ai-reports/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    showAlert('aiReportAlert', '删除成功', true);
+                    loadAdminAIReports();
+                } else {
+                    showAlert('aiReportAlert', '删除失败');
+                }
+            } catch (error) {
+                showAlert('aiReportAlert', '网络错误');
+            }
+        }
+
+        // 加载环境配置
+        async function loadConfigurations() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/configurations`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const config = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('config-backend-url').value = config.BACKEND_URL || '';
+                    document.getElementById('config-jwt-secret').value = config.JWT_SECRET || '';
+                    document.getElementById('config-cf-site-key').value = config.CLOUDFLARE_SITE_KEY || '';
+                    document.getElementById('config-cf-secret-key').value = config.CLOUDFLARE_SECRET_KEY || '';
+                    document.getElementById('config-nginx-exe-path').value = config.NGINX_EXE_PATH || '';
+                    document.getElementById('config-nginx-cwd').value = config.NGINX_CWD || '';
+                    document.getElementById('config-nginx-error-log-path').value = config.NGINX_ERROR_LOG_PATH || '';
+                    document.getElementById('config-nginx-block-ip-file').value = config.NGINX_BLOCK_IP_FILE || '';
+                    document.getElementById('config-ai-reports-api-key').value = config.AI_REPORTS_API_KEY || '';
+                    const backendUrl = config.BACKEND_URL || window.location.origin;
+                    const apiKey = config.AI_REPORTS_API_KEY || '';
+
+                    const pushUrlElement = document.getElementById('n8n-push-url');
+                    if (pushUrlElement) {
+                        pushUrlElement.textContent = `${backendUrl}/api/ai-reports`;
+                    }
+
+                    const authHeaderElement = document.getElementById('n8n-auth-header');
+                    if (authHeaderElement) {
+                        authHeaderElement.textContent = `Authorization: Bearer ${apiKey}`;
+                    }
+                }
+            } catch (error) {
+                showAlert('configAlert', '加载配置失败: ' + error.message);
+            }
+        }
+
+        // 保存环境配置
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payload = {
+                BACKEND_URL: document.getElementById('config-backend-url').value,
+                JWT_SECRET: document.getElementById('config-jwt-secret').value,
+                CLOUDFLARE_SITE_KEY: document.getElementById('config-cf-site-key').value,
+                CLOUDFLARE_SECRET_KEY: document.getElementById('config-cf-secret-key').value,
+                NGINX_EXE_PATH: document.getElementById('config-nginx-exe-path').value,
+                NGINX_CWD: document.getElementById('config-nginx-cwd').value,
+                NGINX_ERROR_LOG_PATH: document.getElementById('config-nginx-error-log-path').value,
+                NGINX_BLOCK_IP_FILE: document.getElementById('config-nginx-block-ip-file').value,
+                AI_REPORTS_API_KEY: document.getElementById('config-ai-reports-api-key').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/configurations`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showAlert('configAlert', result.message, true);
+                } else {
+                    showAlert('configAlert', result.message);
+                }
+            } catch (error) {
+                showAlert('configAlert', '保存失败，请检查网络。');
+            }
+        });
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                icon.textContent = '👁️';
+            }
+        }
+    </script>
+</body>
+
+</html>
