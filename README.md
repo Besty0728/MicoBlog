@@ -1,3 +1,7 @@
+<img width="2549" height="1326" alt="屏幕截图 2025-07-30 021100" src="https://github.com/user-attachments/assets/08c9cd9f-c54c-4bb3-9eae-d5746b943fc6" />
+<img width="2553" height="1324" alt="屏幕截图 2025-07-30 021119" src="https://github.com/user-attachments/assets/ad516248-d605-44c2-a590-fc51b6620a40" />
+<img width="2559" height="1319" alt="屏幕截图 2025-07-30 020917" src="https://github.com/user-attachments/assets/db6d91cb-6038-4508-bb9f-3038128d957e" />
+
 #  流转星个人博客 - 部署指南
 
 欢迎使用流转星个人博客系统！这是一个功能完善、界面炫酷的前后端分离个人博客。本指南将引导你完成从零到一的完整部署过程。
@@ -297,7 +301,167 @@ node server.js
 
 默认密码: admin123
 
-##在评论区启用博主特殊评论，在邮箱输入你的后台管理密码即可
+## 在评论区启用博主特殊评论，在邮箱输入你的后台管理密码即可
+
+### 8.如果启用AI早报(配合n8n)
+请参照我们的处理格式
+<img width="1423" height="559" alt="屏幕截图 2025-07-30 030051" src="https://github.com/user-attachments/assets/a58124e1-7ba7-46e5-a3a9-984715c93b43" />
+<img width="2527" height="1255" alt="屏幕截图 2025-07-30 025759" src="https://github.com/user-attachments/assets/89f09a26-4ccc-45de-b189-f70cff6410c6" />
+```javascript
+// 从上一节点获取AI生成的内容
+const aiContent = $input.first().json.output;
+
+// 智能提取摘要函数
+function extractSummary(content) {
+  // 去除HTML标签
+  let cleanText = content.replace(/<[^>]*>/g, '').trim();
+  
+  // 去除多余的换行和空格
+  cleanText = cleanText.replace(/\s+/g, ' ');
+  
+  // 按句号分割句子
+  const sentences = cleanText.split(/[。！？.!?]/);
+  
+  // 取前1-2个句子作为摘要
+  let summary = sentences[0];
+  if (summary.length < 50 && sentences[1]) {
+    summary += '。' + sentences[1];
+  }
+  
+  // 确保摘要长度不超过150字符
+  if (summary.length > 150) {
+    summary = summary.substring(0, 147) + '...';
+  }
+  
+  // 如果摘要太短，使用默认摘要
+  if (summary.length < 20) {
+    summary = '今日AI行业重要动态汇总，包含最新技术进展和产品发布信息';
+  }
+  
+  return summary;
+}
+
+// 计算亮点数量函数
+function countHighlights(content) {
+  // 统计特殊标记emoji的数量
+  const emojiMarkers = content.match(/🌟|📊|🔬|💡|🚀|⭐|🔥|📈|⚡|🎯/g) || [];
+  
+  // 统计h3标题数量（通常代表不同类别）
+  const h3Tags = content.match(/<h3[^>]*>/g) || [];
+  
+  // 统计news-item数量
+  const newsItems = content.match(/news-item/g) || [];
+  
+  // 取最大值，但至少为1，最多为10
+  const maxCount = Math.max(
+    emojiMarkers.length,
+    h3Tags.length,
+    Math.floor(newsItems.length / 2)
+  );
+  
+  return Math.min(Math.max(1, maxCount), 10);
+}
+
+// 生成格式化的日期和标题
+function generateDateAndTitle() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  
+  const reportDate = `${year}-${month}-${day}`;
+  const title = `${year}年${month}月${day}日 AI日报`;
+  
+  return { reportDate, title };
+}
+
+// 验证和清理内容
+function validateContent(content) {
+  if (!content || content.trim().length < 50) {
+    throw new Error('AI生成的内容太短，无法创建日报');
+  }
+  
+  // 确保内容包含基本的HTML结构
+  if (!content.includes('<div') && !content.includes('<h3')) {
+    // 如果没有HTML结构，添加基本包装
+    return `<div class="ai-report-content">
+      <h3>🌟 今日AI亮点</h3>
+      <div class="news-item">
+        <p>${content}</p>
+      </div>
+    </div>`;
+  }
+  
+  return content;
+}
+
+try {
+  // 验证输入数据
+  if (!aiContent) {
+    throw new Error('未找到AI生成的内容');
+  }
+  
+  // 清理和验证内容
+  const cleanedContent = validateContent(aiContent);
+  
+  // 生成日期和标题
+  const { reportDate, title } = generateDateAndTitle();
+  
+  // 提取摘要
+  const summary = extractSummary(cleanedContent);
+  
+  // 计算亮点数量
+  const highlightsCount = countHighlights(cleanedContent);
+  
+  // 返回格式化的请求体数据
+  return [{
+    json: {
+      requestBody: {
+        title: title,
+        content: cleanedContent,
+        summary: summary,
+        report_date: reportDate,
+        highlights_count: highlightsCount
+      },
+      // 添加调试信息
+      debug: {
+        originalContentLength: aiContent.length,
+        summaryLength: summary.length,
+        highlightsCount: highlightsCount,
+        reportDate: reportDate
+      }
+    }
+  }];
+  
+} catch (error) {
+  // 错误处理
+  console.error('处理AI日报数据时出错:', error.message);
+  
+  return [{
+    json: {
+      error: true,
+      message: error.message,
+      // 提供备用数据
+      requestBody: {
+        title: new Date().toISOString().split('T')[0] + ' AI日报（自动生成）',
+        content: aiContent || '<div class="ai-report-content"><p>内容生成失败</p></div>',
+        summary: '今日AI行业动态汇总',
+        report_date: new Date().toISOString().split('T')[0],
+        highlights_count: 1
+      }
+    }
+  }];
+}
+```
+<img width="961" height="1210" alt="屏幕截图 2025-07-30 030202" src="https://github.com/user-attachments/assets/c7c7b596-72b2-40ef-b5b1-4189b9eaba18" />
+<img width="932" height="1099" alt="屏幕截图 2025-07-30 030211" src="https://github.com/user-attachments/assets/d72a9432-7f69-4123-94ca-e7cd8cc66bf7" />
+
+```json
+{
+  "Content-Type": "application/json; charset=utf-8",
+  "User-Agent": "n8n-ai-report-bot/1.0"
+}
+```
 
 ## 📝 注意事项
 
