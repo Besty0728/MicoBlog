@@ -9,7 +9,7 @@
     <script>
         (async function () {
             // 这是您唯一需要修改的部分，将API_BASE_URL替换为您的后端API地址记得加后缀/api
-            window.API_BASE_URL = 'https://api.example.com/api';
+            window.API_BASE_URL = 'https://your-api-base-url.com/api';
             try {
                 const response = await fetch(`${window.API_BASE_URL}/settings`);
                 const settings = await response.json();
@@ -3283,17 +3283,19 @@
             //console.log('查看AI日报:', reportDate);
 
             try {
-                const apiBase = window.API_BASE;
-                const response = await fetch(`${apiBase}/ai-reports/${reportDate}`);
+                const response = await fetch(`${API_BASE}/ai-reports/${reportDate}`);
 
+                // 只读取一次响应体，并将其存储在变量中
+                const reportData = await response.json();
+
+                // 检查请求是否成功。即使请求失败（如404），后端也可能返回一个包含错误信息的JSON
                 if (!response.ok) {
-                    throw new Error(`无法获取日报详情: ${response.status}`);
+                    // 如果后端返回了错误信息，就使用它，否则使用HTTP状态
+                    throw new Error(reportData.message || `无法获取日报详情: ${response.status}`);
                 }
 
-                const report = await response.json();
-
-                // 显示日报查看器
-                showAIReportViewer(report);
+                // 如果请求成功，使用已经读取的数据来显示查看器
+                showAIReportViewer(reportData);
 
             } catch (error) {
                 console.error('查看AI日报失败:', error);
@@ -3490,4 +3492,5 @@
         }
     </script>
 </body>
+
 </html>
