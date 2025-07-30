@@ -22,7 +22,7 @@
 - **前端**: 原生 HTML, CSS, JavaScript (无框架)
 - **数据库**: SQLite
 - **富文本编辑器**: TinyMCE
-- **核心依赖**: `cors`, `bcrypt`, `jsonwebtoken`, `multer`, `chokidar`, `execa`
+- **核心依赖**: `cors, bcrypt, jsonwebtoken, multer, chokidar, execa`
 
 ## 🚀 部署流程 (Windows 环境)
 本指南主要针对 Windows 10/11 或 Windows Server 系统。
