@@ -769,8 +769,13 @@ app.get('/api/projects', (req, res) => {
         if (err) {
             return res.status(500).json({ message: '获取项目失败' });
         }
+        const formattedProjects = projects.map(p => ({
+            ...p,
+            created_at: new Date(p.created_at + 'Z').toISOString(),
+            updated_at: p.updated_at ? new Date(p.updated_at + 'Z').toISOString() : null
+        }));
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.json(projects);
+        res.json(formattedProjects);
     });
 });
 
@@ -806,7 +811,7 @@ app.post('/api/projects', authMiddleware, (req, res) => {
         });
 });
 
-// 增加项目浏览量（不需要认证）
+// 增加项目浏览量
 app.post('/api/projects/:id/view', (req, res) => {
     const projectId = req.params.id;
 
@@ -1011,7 +1016,11 @@ app.get('/api/projects/:id/comments', (req, res) => {
             if (err) {
                 return res.status(500).json({ message: '获取评论失败' });
             }
-            res.json(comments);
+            const formattedComments = comments.map(comment => ({
+                ...comment,
+                created_at: new Date(comment.created_at + 'Z').toISOString()
+            }));
+            res.json(formattedComments);
         });
 });
 
@@ -1089,7 +1098,11 @@ app.get('/api/admin/comments', authMiddleware, (req, res) => {
         if (err) {
             return res.status(500).json({ message: '获取评论失败' });
         }
-        res.json(comments);
+        const formattedComments = comments.map(comment => ({
+            ...comment,
+            created_at: new Date(comment.created_at + 'Z').toISOString()
+        }));
+        res.json(formattedComments);
     });
 });
 
