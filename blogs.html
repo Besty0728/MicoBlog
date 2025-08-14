@@ -9,8 +9,22 @@
     <script>
         (async function () {
             // 这是您唯一需要修改的部分，将API_BASE_URL替换为您的后端API地址记得加后缀/api
-            window.API_BASE_URL = 'https://your-api-base-url.com/api';
+            window.API_BASE_URL = 'http://your_domain/api';
             try {
+                // 请求背景接口
+                const bgResponse = await fetch(`${window.API_BASE_URL}/backgrounds`);
+                const bgSettings = await bgResponse.json();
+
+                if (bgSettings.url) { // 只要 url 不为 null 就设置
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        body.resources-loaded::before {
+                            background-image: url('${bgSettings.url}');
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
                 const response = await fetch(`${window.API_BASE_URL}/settings`);
                 const settings = await response.json();
 

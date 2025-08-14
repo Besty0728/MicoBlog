@@ -250,16 +250,41 @@ db.serialize(() => {
             console.error("添加 ai_reports_enabled 字段失败:", err);
         }
     });
+
     db.run("ALTER TABLE settings ADD COLUMN ip_monitoring_enabled INTEGER DEFAULT 1", (err) => {
         if (err && !err.message.includes('duplicate column name')) {
             console.error("添加 ip_monitoring_enabled 字段失败:", err);
         }
     });
+
     db.run("ALTER TABLE settings ADD COLUMN turnstile_validation_mode INTEGER DEFAULT 2", (err) => {
         if (err && !err.message.includes('duplicate column name')) {
             console.error("添加 turnstile_validation_mode 字段失败:", err);
         } else {
             console.log("验证模式字段检查完成");
+        }
+    });
+
+    db.run("ALTER TABLE settings ADD COLUMN background_mode TEXT DEFAULT 'default'", (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error("添加 background_mode 字段失败:", err);
+        }
+    });
+
+    db.run("ALTER TABLE settings ADD COLUMN local_background_list TEXT", (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error("添加 local_background_list 字段失败:", err);
+        }
+    });
+
+    db.run("ALTER TABLE settings ADD COLUMN random_background_api_url TEXT", (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error("添加 random_background_api_url 字段失败:", err);
+        }
+    });
+    db.run("ALTER TABLE settings ADD COLUMN default_background_image TEXT", (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error("添加 default_background_image 字段失败:", err);
         }
     });
 });
@@ -604,7 +629,11 @@ app.put('/api/settings', authMiddleware, (req, res) => {
         profile_location,
         turnstile_validation_mode,
         ai_reports_enabled,
-        ip_monitoring_enabled
+        ip_monitoring_enabled,
+        background_mode,
+        random_background_api_url,
+        local_background_list,
+        default_background_image
     } = req.body;
 
     // 首先检查settings表是否存在记录
@@ -673,6 +702,21 @@ app.put('/api/settings', authMiddleware, (req, res) => {
         if (ip_monitoring_enabled !== undefined) {
             fieldsToUpdate.push('ip_monitoring_enabled = ?');
             params.push(parseInt(ip_monitoring_enabled) || 0);
+        }
+
+        // --- 随机背景图的更新逻辑 ---
+        if (background_mode !== undefined) { fieldsToUpdate.push('background_mode = ?'); params.push(background_mode); }
+        if (random_background_api_url !== undefined) { fieldsToUpdate.push('random_background_api_url = ?'); params.push(random_background_api_url); }
+        if (local_background_list !== undefined) {
+            // 确保传入的是字符串
+            const listString = Array.isArray(local_background_list) ? JSON.stringify(local_background_list) : '[]';
+            fieldsToUpdate.push('local_background_list = ?');
+            params.push(listString);
+        }
+
+        if (default_background_image !== undefined) {
+            fieldsToUpdate.push('default_background_image = ?');
+            params.push(default_background_image);
         }
 
         if (fieldsToUpdate.length === 0) {
@@ -763,6 +807,59 @@ app.post('/api/settings/bgm', authMiddleware, (req, res) => {
             });
     });
 });
+
+//获取本地图片列表
+app.get('/api/admin/local-images', authMiddleware, (req, res) => {
+    const imagesDir = path.join(__dirname, '..', 'images');
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+    fs.readdir(imagesDir, (err, files) => {
+        if (err) {
+            console.error('读取 /images 目录失败:', err);
+            return res.status(500).json({ message: '无法读取图片目录' });
+        }
+
+        const imageFiles = files.filter(file => {
+            return allowedExtensions.includes(path.extname(file).toLowerCase());
+        });
+
+        res.json(imageFiles);
+    });
+});
+
+// 公开的背景获取接口
+app.get('/api/backgrounds', (req, res) => {
+    db.get('SELECT background_mode, random_background_api_url, local_background_list, default_background_image FROM settings WHERE id = 1', (err, settings) => {
+        if (err || !settings) {
+            return res.json({ mode: 'default', url: null }); // 默认情况
+        }
+
+        const { background_mode, random_background_api_url, local_background_list, default_background_image } = settings;
+
+        if (background_mode === 'random_api' && random_background_api_url) {
+            return res.json({ mode: 'api', url: random_background_api_url });
+        }
+
+        if (background_mode === 'random_local' && local_background_list) {
+            try {
+                const imageList = JSON.parse(local_background_list);
+                if (imageList && imageList.length > 0) {
+                    const randomImage = imageList[Math.floor(Math.random() * imageList.length)];
+                    return res.json({ mode: 'local', url: `/images/${randomImage}` });
+                }
+            } catch (e) { /* 忽略错误，降级处理 */ }
+        }
+
+        // --- 自定义的默认背景 ---
+        if (background_mode === 'default' && default_background_image) {
+            return res.json({ mode: 'default_custom', url: `/images/${default_background_image}` });
+        }
+
+        // 所有其他情况，都返回真正的默认模式（使用CSS中的背景）
+        return res.json({ mode: 'default', url: null });
+    });
+});
+
 // 获取所有项目
 app.get('/api/projects', (req, res) => {
     db.all('SELECT * FROM projects ORDER BY created_at DESC', (err, projects) => {
@@ -811,7 +908,7 @@ app.post('/api/projects', authMiddleware, (req, res) => {
         });
 });
 
-// 增加项目浏览量
+// 增加项目浏览量（不需要认证）
 app.post('/api/projects/:id/view', (req, res) => {
     const projectId = req.params.id;
 
@@ -1016,6 +1113,7 @@ app.get('/api/projects/:id/comments', (req, res) => {
             if (err) {
                 return res.status(500).json({ message: '获取评论失败' });
             }
+            // 将时间转换为ISO格式
             const formattedComments = comments.map(comment => ({
                 ...comment,
                 created_at: new Date(comment.created_at + 'Z').toISOString()

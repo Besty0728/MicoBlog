@@ -492,22 +492,25 @@
             transition-duration: .2s;
         }
 
-        #aiReportsSwitch:checked+.toggleSwitch::after,
-        #ipMonitoringSwitch:checked+.toggleSwitch::after {
+        #securitySection input[type="checkbox"]:checked+.toggleSwitch::after {
             transform: translateX(100%);
             transition-duration: .2s;
             background-color: white;
         }
 
-        #aiReportsSwitch:checked+.toggleSwitch,
-        #ipMonitoringSwitch:checked+.toggleSwitch {
+        #securitySection input[type="checkbox"]:checked+.toggleSwitch {
             background-color: rgb(0, 255, 55);
             transition-duration: .2s;
         }
 
-        #aiReportsSwitch,
-        #ipMonitoringSwitch {
+        /* 通用规则*/
+        #securitySection input[type="checkbox"] {
             display: none !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 0;
+            height: 0;
         }
 
         .toggleSwitch {
@@ -584,6 +587,95 @@
             /* 根据你的label和input高度微调 */
             cursor: pointer;
             user-select: none;
+        }
+
+        /* 背景模式选择器 */
+        .container input {
+            display: none;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            font-size: 16px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .container:hover {
+            background-color: #f0f2f5;
+        }
+
+        /* 自定义框的基础样式 */
+        .container .checkmark {
+            position: relative;
+            height: 1.3em;
+            width: 1.3em;
+            background-color: #2196F300;
+            /* 透明 */
+            border-radius: 0.25em;
+            transition: all 0.25s;
+            margin-left: auto;
+            /* 将选择框推到最右边 */
+            flex-shrink: 0;
+        }
+
+        /* 边框伪元素 */
+        .container .checkmark:after {
+            content: "";
+            position: absolute;
+            transform: rotate(0deg);
+            border: 0.1em solid black;
+            left: 0;
+            top: 0;
+            width: 1.05em;
+            height: 1.05em;
+            border-radius: 0.25em;
+            transition: all 0.25s, border-width 0.1s;
+        }
+
+        /* 选中时的背景色 */
+        .container input:checked~.checkmark {
+            background-color: #2196F3;
+            /* 蓝色 */
+        }
+
+        /* 选中时的对勾动画 */
+        .container input:checked~.checkmark:after {
+            left: 0.45em;
+            top: 0.25em;
+            width: 0.25em;
+            height: 0.5em;
+            border-color: #fff0 white white #fff0;
+            border-width: 0 0.15em 0.15em 0;
+            border-radius: 0em;
+            transform: rotate(45deg);
+        }
+
+        /* --- 本地图片列表的特定微调 --- */
+        #localImagesContainer {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .local-image-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-right: 15px;
+        }
+
+        .local-image-item span {
+            flex-grow: 1;
         }
     </style>
 </head>
@@ -934,6 +1026,59 @@
                     </div>
                 </div>
 
+                <!-- 背景模式设置 -->
+                <h3 style="margin-bottom: 10px;">🎨 背景模式设置</h3>
+                <div class="form-group"
+                    style="background: #f5f7fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+
+                    <!-- 模式选择器 -->
+                    <div class="mode-selector-group">
+                        <!-- 选项1: 默认 -->
+                        <label class="container radio-container">
+                            默认固定背景
+                            <input type="radio" name="backgroundMode" value="default">
+                            <div class="checkmark"></div>
+                        </label>
+                        <!-- 选项2: API -->
+                        <label class="container radio-container">
+                            外部API随机
+                            <input type="radio" name="backgroundMode" value="random_api">
+                            <div class="checkmark"></div>
+                        </label>
+                        <!-- 选项3: 本地 -->
+                        <label class="container radio-container">
+                            本地图片随机
+                            <input type="radio" name="backgroundMode" value="random_local">
+                            <div class="checkmark"></div>
+                        </label>
+                    </div>
+
+                    <!-- 外部API配置区 (默认隐藏) -->
+                    <div id="apiConfigSection" style="display: none; margin-top: 15px;">
+                        <label for="randomBackgroundApiUrl">随机图片API链接</label>
+                        <input type="url" id="randomBackgroundApiUrl"
+                            placeholder="例如：https://api.btstu.cn/sjbz/api.php">
+                    </div>
+
+                    <!-- 本地图片配置区 (默认隐藏) -->
+                    <div id="localConfigSection" style="display: none; margin-top: 15px;">
+                        <label>选择参与随机的本地图片</label>
+                        <div id="localImagesContainer">
+                            <p>正在加载本地图片...</p>
+                        </div>
+                    </div>
+
+                    <!-- 默认图片配置区 (默认隐藏) -->
+                    <div id="defaultConfigSection" style="display: none; margin-top: 15px;">
+                        <label>选择一张图片作为固定的默认背景</label>
+                        <div id="defaultImagesContainer">
+                            <p>正在加载本地图片...</p>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="saveBackgroundSettings()" style="margin-top: 20px;">保存背景设置</button>
+                </div>
+
                 <!-- 分割线 -->
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
 
@@ -1030,7 +1175,7 @@
                     <h3>Cloudflare Turnstile</h3>
                     <div class="form-group" style="position: relative;">
                         <label>Site Key (公钥)</label>
-                        <input type="password" id="config-cf-site-key" placeholder="粘贴你的Turnstile Site Key">
+                        <input type="text" id="config-cf-site-key" placeholder="粘贴你的Turnstile Site Key">
                         <span class="toggle-password"
                             onclick="togglePasswordVisibility('config-cf-site-key')">👁️</span>
                     </div>
@@ -1055,7 +1200,8 @@
                     </div>
                     <div class="form-group">
                         <label>Nginx错误日志路径</label>
-                        <input type="text" id="config-nginx-error-log-path" placeholder="例如: C:\\nginx\\logs\\error.log">
+                        <input type="text" id="config-nginx-error-log-path"
+                            placeholder="例如: C:\\nginx\\logs\\error.log">
                         <small class="restart-notice">修改后需重启服务器生效</small>
                     </div>
                     <div class="form-group">
@@ -1186,6 +1332,8 @@
 
             // 初始化三个功能开关
             initializeFunctionSwitches();
+            // 初始化背景设置
+            initializeBackgroundSettings();
         }
 
         function initializeFunctionSwitches() {
@@ -1403,6 +1551,15 @@
                 const ipMonitoringSwitch = document.getElementById('ipMonitoringSwitch');
                 if (ipMonitoringSwitch) {
                     ipMonitoringSwitch.checked = settings.ip_monitoring_enabled !== 0;
+                }
+
+                const randomBackgroundSwitch = document.getElementById('randomBackgroundSwitch');
+                if (randomBackgroundSwitch) {
+                    randomBackgroundSwitch.checked = settings.random_background_enabled === 1;
+                }
+                const randomBackgroundApiUrlInput = document.getElementById('randomBackgroundApiUrl');
+                if (randomBackgroundApiUrlInput) {
+                    randomBackgroundApiUrlInput.value = settings.random_background_api_url || '';
                 }
 
             } catch (error) {
@@ -2408,6 +2565,134 @@
             } else {
                 input.type = 'password';
                 icon.textContent = '👁️';
+            }
+        }
+        // 初始化背景设置UI和事件
+        async function initializeBackgroundSettings() {
+            // 绑定模式切换事件
+            document.querySelectorAll('input[name="backgroundMode"]').forEach(radio => {
+                radio.addEventListener('change', handleBackgroundModeChange);
+            });
+
+            // 加载并显示本地图片列表
+            await loadAndRenderLocalImages();
+
+            // 加载并应用当前设置
+            await loadAndApplyBackgroundSettings();
+        }
+
+        // 处理模式切换时的UI显示/隐藏
+        function handleBackgroundModeChange() {
+            const selectedMode = document.querySelector('input[name="backgroundMode"]:checked').value;
+            document.getElementById('defaultConfigSection').style.display = (selectedMode === 'default') ? 'block' : 'none';
+            document.getElementById('apiConfigSection').style.display = (selectedMode === 'random_api') ? 'block' : 'none';
+            document.getElementById('localConfigSection').style.display = (selectedMode === 'random_local') ? 'block' : 'none';
+        }
+
+        // 从后端加载本地图片并渲染到UI
+        async function loadAndRenderLocalImages() {
+            const multiSelectContainer = document.getElementById('localImagesContainer');
+            const singleSelectContainer = document.getElementById('defaultImagesContainer'); // 新容器
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/local-images`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!response.ok) throw new Error('无法获取图片列表');
+                const images = await response.json();
+
+                if (images.length === 0) {
+                    multiSelectContainer.innerHTML = '<p>未在 /images 目录中找到图片。</p>';
+                    singleSelectContainer.innerHTML = '<p>未在 /images 目录中找到图片。</p>';
+                    return;
+                }
+
+                // 为“本地随机”生成多选列表
+                multiSelectContainer.innerHTML = images.map(image => `
+                    <label class="container local-image-item">
+                        <img src="/images/${image}" alt="${image}">
+                        <span>${image}</span>
+                        <input type="checkbox" name="localRandomImages" value="${image}">
+                        <div class="checkmark"></div>
+                    </label>
+                `).join('');
+
+                // 为“默认固定”生成单选列表
+                singleSelectContainer.innerHTML = images.map(image => `
+                    <label class="container local-image-item">
+                        <img src="/images/${image}" alt="${image}">
+                        <span>${image}</span>
+                        <input type="radio" name="defaultBackgroundImage" value="${image}">
+                        <div class="checkmark"></div>
+                    </label>
+                `).join('');
+
+            } catch (error) {
+                const errorMsg = `<p style="color: #ff6b6b;">加载失败: ${error.message}</p>`;
+                multiSelectContainer.innerHTML = errorMsg;
+                singleSelectContainer.innerHTML = errorMsg;
+            }
+        }
+
+        // 从后端加载当前设置并应用到UI
+        async function loadAndApplyBackgroundSettings() {
+            try {
+                const response = await fetch(`${API_BASE}/settings`);
+                const settings = await response.json();
+
+                // 1. 设置模式
+                const mode = settings.background_mode || 'default';
+                document.querySelector(`input[name="backgroundMode"][value="${mode}"]`).checked = true;
+                handleBackgroundModeChange();
+
+                // 2. 填充API URL
+                document.getElementById('randomBackgroundApiUrl').value = settings.random_background_api_url || '';
+
+                // 3. 勾选“本地随机”的图片 (多选)
+                if (settings.local_background_list) {
+                    const selectedImages = JSON.parse(settings.local_background_list);
+                    document.querySelectorAll('input[name="localRandomImages"]').forEach(checkbox => {
+                        checkbox.checked = selectedImages.includes(checkbox.value);
+                    });
+                }
+
+                // 4. 选中“默认固定”的图片 (单选) - 新增
+                if (settings.default_background_image) {
+                    const radio = document.querySelector(`input[name="defaultBackgroundImage"][value="${settings.default_background_image}"]`);
+                    if (radio) radio.checked = true;
+                }
+
+            } catch (error) {
+                console.error('加载背景设置失败:', error);
+            }
+        }
+
+        // 保存所有背景设置
+        async function saveBackgroundSettings() {
+            const mode = document.querySelector('input[name="backgroundMode"]:checked').value;
+            const apiUrl = document.getElementById('randomBackgroundApiUrl').value;
+            const selectedLocalImages = Array.from(document.querySelectorAll('#localImagesContainer input:checked')).map(cb => cb.value);
+
+            const defaultRadio = document.querySelector('input[name="defaultBackgroundImage"]:checked');
+            const defaultImage = defaultRadio ? defaultRadio.value : '';
+
+            const payload = {
+                background_mode: mode,
+                random_background_api_url: apiUrl,
+                local_background_list: selectedLocalImages,
+                default_background_image: defaultImage
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/settings`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('保存失败');
+                showAlert('securityAlert', '背景设置已成功保存！', true);
+            } catch (error) {
+                showAlert('securityAlert', `保存失败: ${error.message}`);
             }
         }
     </script>
