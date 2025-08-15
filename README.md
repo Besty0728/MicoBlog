@@ -4,6 +4,7 @@
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=0,2,2,5,30&height=160&section=header&text=🌈%20你好啊，欢迎来到MicoBlog部署指南，更新日志见Wiki%20✨&fontSize=28&fontColor=fff&animation=twinkling&fontAlignY=40" />
 
+[![更新日志](https://img.shields.io/badge/更新日志-点击查看-2ea44f?style=for-the-badge)](https://github.com/Besty0728/MicoBlog/wiki)
 #  流转星个人博客 - 部署指南
 
 欢迎使用流转星个人博客系统！这是一个功能完善、界面炫酷的前后端分离个人博客。本指南将引导你完成从零到一的完整部署过程。
