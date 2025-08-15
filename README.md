@@ -2,6 +2,8 @@
 <img width="2553" height="1324" alt="屏幕截图 2025-07-30 021119" src="https://github.com/user-attachments/assets/ad516248-d605-44c2-a590-fc51b6620a40" />
 <img width="2559" height="1319" alt="屏幕截图 2025-07-30 020917" src="https://github.com/user-attachments/assets/db6d91cb-6038-4508-bb9f-3038128d957e" />
 
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=0,2,2,5,30&height=160&section=header&text=🌈%20你好啊，欢迎来到MicoBlog部署指南，更新日志见Wiki%20✨&fontSize=28&fontColor=fff&animation=twinkling&fontAlignY=40" />
+
 #  流转星个人博客 - 部署指南
 
 欢迎使用流转星个人博客系统！这是一个功能完善、界面炫酷的前后端分离个人博客。本指南将引导你完成从零到一的完整部署过程。
