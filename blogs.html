@@ -4,12 +4,13 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人博客 - 流转星</title>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script>
         (async function () {
             // 这是您唯一需要修改的部分，将API_BASE_URL替换为您的后端API地址记得加后缀/api
-            window.API_BASE_URL = 'http://your_domain/api';
+            window.API_BASE_URL = 'http://yourdomain.com/api';
             try {
                 // 请求背景接口
                 const bgResponse = await fetch(`${window.API_BASE_URL}/backgrounds`);
@@ -344,8 +345,8 @@
         /* Enhanced Glass Morphism Effect for all modules */
         .glass-card {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(1.314px);
             -webkit-backdrop-filter: blur(1.314px);
+            backdrop-filter: blur(1.314px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37),
                 inset 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -360,8 +361,8 @@
         .skill-item,
         .blog-card {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(1.314px);
             -webkit-backdrop-filter: blur(1.314px);
+            backdrop-filter: blur(1.314px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37),
                 inset 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -426,6 +427,9 @@
             cursor: pointer;
             position: relative;
             border: 2px solid rgba(255, 255, 255, 0.3);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             user-select: none;
             overflow: hidden;
             /* 确保图片不溢出 */
@@ -601,8 +605,8 @@
             width: 40px;
             height: 40px;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(1.314px);
             -webkit-backdrop-filter: blur(1.314px);
+            backdrop-filter: blur(1.314px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             display: flex;
@@ -714,8 +718,8 @@
 
         #animationCanvas {
             background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(1.314px);
             -webkit-backdrop-filter: blur(1.314px);
+            backdrop-filter: blur(1.314px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             margin: 20px auto;
@@ -1132,8 +1136,8 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             z-index: 2000;
             display: flex;
             align-items: center;
@@ -1345,8 +1349,27 @@
         }
 
         .blog-viewer-content {
+            /* Firefox */
             scrollbar-width: thin;
             scrollbar-color: rgba(93, 213, 255, 0.8) transparent;
+        }
+
+        /* WebKit browsers (Chrome, Safari, Edge) scrollbar fallback */
+        .blog-viewer-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .blog-viewer-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .blog-viewer-content::-webkit-scrollbar-thumb {
+            background: rgba(93, 213, 255, 0.8);
+            border-radius: 4px;
+        }
+
+        .blog-viewer-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(93, 213, 255, 1);
         }
 
         /* --- 14. UI Helpers & Misc --- */
@@ -1420,6 +1443,7 @@
             margin-top: 40px;
             padding: 30px;
             background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(1.314px);
             backdrop-filter: blur(1.314px);
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1633,8 +1657,8 @@
             width: 100%;
             height: 100%;
             background-color: rgba(10, 10, 20, 0.95);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1877,6 +1901,40 @@
                 font-size: 14px;
             }
         }
+
+        /* Additional utility classes for inline style replacements */
+        .display-none {
+            display: none;
+        }
+
+        .display-block {
+            display: block;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .opacity-06 {
+            opacity: 0.6;
+        }
+
+        .margin-bottom-15 {
+            margin-bottom: 15px;
+        }
+
+        .margin-bottom-10 {
+            margin-bottom: 10px;
+        }
+
+        .margin-top-20 {
+            margin-top: 20px;
+        }
+
+        .load-more-container {
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 
@@ -1890,7 +1948,7 @@
     </div>
 
     <!-- 将所有原始内容包裹起来并隐藏 -->
-    <main id="main-content" style="display: none;">
+    <main id="main-content" class="display-none">
         <!-- Background particles -->
         <div class="bg-particles" id="particles"></div>
         <!-- Background Music -->
@@ -1912,7 +1970,7 @@
                     <div class="role">👨‍💻 Unity个人开发者</div>
                     <div class="motto">📚 爱我宝宝，用心去对待事情</div>
                     <div class="social-links">
-                        <a href="https://github.com/Besty0728" target="_blank" class="social-link" title="GitHub">
+                        <a href="https://github.com/Besty0728" target="_blank" rel="noopener" class="social-link" title="GitHub">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12" />
@@ -1920,11 +1978,11 @@
                         </a>
                         <a href="mailto:a2120060205@icloud.com" target="_blank" class="social-link"
                             title="Email:a2120060205@icloud.com">📧</a>
-                        <a href="https://space.bilibili.com/420378171" target="_blank" class="social-link"
+                        <a href="https://space.bilibili.com/420378171" target="_blank" rel="noopener" class="social-link"
                             title="Bilibili">
                             <img src="images/bilibili.png" alt="Bilibili Icon">
                         </a>
-                        <a href="https://ditu.amap.com" target="_blank" class="social-link" title="高德地图">📍</a>
+                        <a href="https://ditu.amap.com" target="_blank" rel="noopener" class="social-link" title="高德地图">📍</a>
                     </div>
                 </div>
             </div>
@@ -1988,9 +2046,9 @@
                     <div class="search-container">
                         <span class="search-icon">🔍</span>
                         <input type="text" class="search-input" placeholder="搜索项目标题...">
-                        <span class="search-clear" style="display: none;">✕</span>
+                        <span class="search-clear display-none">✕</span>
                     </div>
-                    <div class="search-results-info" style="display: none;">
+                    <div class="search-results-info display-none">
                         找到 <span class="results-count">0</span> 篇相关文章
                     </div>
                 </div>
@@ -2008,19 +2066,19 @@
                             <div class="search-container">
                                 <span class="search-icon">🔍</span>
                                 <input type="text" class="search-input" placeholder="搜索AI日报内容...">
-                                <span class="search-clear" style="display: none;">✕</span>
+                                <span class="search-clear display-none">✕</span>
                             </div>
-                            <div class="search-results-info" style="display: none;">
+                            <div class="search-results-info display-none">
                                 找到 <span class="results-count">0</span> 期相关日报
                             </div>
                         </div>
 
                         <div class="ai-reports-list" id="aiReportsList">
-                            <p style="text-align: center; opacity: 0.6;">正在加载AI日报...</p>
+                            <p class="text-center opacity-06">正在加载AI日报...</p>
                         </div>
 
-                        <div class="load-more-container" style="text-align: center; margin-top: 20px;">
-                            <button class="load-more-btn glass-card" onclick="loadMoreReports()" style="display: none;">
+                        <div class="load-more-container">
+                            <button class="load-more-btn glass-card display-none" onclick="loadMoreReports()">
                                 加载更多日报
                             </button>
                         </div>
@@ -2029,14 +2087,14 @@
                     <!-- 右侧：时间线 -->
                     <div class="ai-reports-timeline">
                         <div class="timeline-card glass-card">
-                            <h3 style="margin-bottom: 15px;">📅 最近日报</h3>
+                            <h3 class="margin-bottom-15">📅 最近日报</h3>
                             <div class="timeline-list" id="reportsTimeline">
-                                <p style="opacity: 0.6;">加载中...</p>
+                                <p class="opacity-06">加载中...</p>
                             </div>
                         </div>
 
-                        <div class="timeline-stats glass-card" style="margin-top: 20px;">
-                            <h4 style="margin-bottom: 10px;">📊 统计信息</h4>
+                        <div class="timeline-stats glass-card margin-top-20">
+                            <h4 class="margin-bottom-10">📊 统计信息</h4>
                             <div class="stats-item">总计: <span id="totalReports">0</span>期</div>
                             <div class="stats-item">本月: <span id="monthlyReports">0</span>期</div>
                             <div class="stats-item">最新: <span id="latestDate">-</span></div>
