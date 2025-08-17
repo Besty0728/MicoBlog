@@ -1,0 +1,35 @@
+services:
+  micoblog-backend:
+    build: 
+      context: ..
+      dockerfile: docker-deploy/Dockerfile
+    container_name: micoblog-backend
+    ports:
+      - "3001:3001"  # 使用与原版本相同的端口
+    volumes:
+      # 数据持久化 - 挂载到 backend 目录
+      - ./data:/app/backend/data
+      - ./uploads:/app/backend/uploads
+      # Nginx 文件挂载 - 您需要根据实际 Nginx 路径调整
+      # 注意：Windows 路径需要使用正斜杠或双反斜杠
+      - /c/nginx/logs:/nginx/logs
+      - /c/nginx/conf:/nginx/conf
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_FILE=/app/backend/data/database.db
+      # Nginx 集成路径（保持与 Windows 版本一致的功能）
+      - NGINX_ERROR_LOG_PATH=/nginx/logs/error.log
+      - NGINX_BLOCK_IP_FILE=/nginx/conf/blockips.conf
+      - NGINX_EXE_PATH=/usr/sbin/nginx
+      - NGINX_CWD=/nginx/conf
+      # 安全配置（建议在生产环境中修改）
+      - JWT_SECRET=default-weak-secret-for-initial-login-please-change-me
+      - AI_REPORTS_API_KEY=ai-report-2025-secret-key-9527
+    restart: unless-stopped
+    networks:
+      - micoblog-network
+
+networks:
+  micoblog-network:
+    driver: bridge

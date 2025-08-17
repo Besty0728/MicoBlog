@@ -11,6 +11,14 @@
 # 用户上传的音乐、图片等，通常不计入版本控制
 /backend/uploads/
 
+# Docker 部署产生的数据文件
+/docker-deploy/data/
+/docker-deploy/uploads/
+/docker-deploy/nginx/logs/
+
+# Docker 构建缓存
+.dockerignore
+
 # Operating System generated files
 .DS_Store
 .DS_Store?
@@ -28,3 +36,10 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp

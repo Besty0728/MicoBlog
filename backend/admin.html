@@ -586,6 +586,7 @@
             top: 40px;
             /* 根据你的label和input高度微调 */
             cursor: pointer;
+            -webkit-user-select: none;
             user-select: none;
         }
 
@@ -600,6 +601,7 @@
             position: relative;
             cursor: pointer;
             font-size: 16px;
+            -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             padding: 8px;
@@ -1176,14 +1178,12 @@
                     <div class="form-group" style="position: relative;">
                         <label>Site Key (公钥)</label>
                         <input type="text" id="config-cf-site-key" placeholder="粘贴你的Turnstile Site Key">
-                        <span class="toggle-password"
-                            onclick="togglePasswordVisibility('config-cf-site-key')">👁️</span>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('config-cf-site-key')">👁️</span>
                     </div>
                     <div class="form-group" style="position: relative;">
                         <label>Secret Key (私钥)</label>
                         <input type="password" id="config-cf-secret-key" placeholder="粘贴你的Turnstile Secret Key">
-                        <span class="toggle-password"
-                            onclick="togglePasswordVisibility('config-cf-secret-key')">👁️</span>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('config-cf-secret-key')">👁️</span>
                     </div>
 
                     <!-- Nginx 路径 （Windows） -->
@@ -1216,8 +1216,7 @@
                     <div class="form-group" style="position: relative;">
                         <label>AI日报推送API密钥</label>
                         <input type="password" id="config-ai-reports-api-key" placeholder="用于n8n等工具推送的密钥">
-                        <span class="toggle-password"
-                            onclick="togglePasswordVisibility('config-ai-reports-api-key')">👁️</span>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('config-ai-reports-api-key')">👁️</span>
                     </div>
 
                     <button type="submit">保存所有设置</button>

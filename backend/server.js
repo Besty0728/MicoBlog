@@ -17,17 +17,17 @@ const app = express();
 const { execa } = require('execa');
 
 let AppConfig = {
-    PORT: 3001,
-    DB_FILE: 'database.db',// 数据库文件名
-    JWT_SECRET: 'default-weak-secret-for-initial-login-please-change-me',// 默认JWT密钥
-    BACKEND_URL: '',
-    CLOUDFLARE_SITE_KEY: '',
-    CLOUDFLARE_SECRET_KEY: '',
-    NGINX_ERROR_LOG_PATH: '',
-    NGINX_BLOCK_IP_FILE: '',
-    NGINX_EXE_PATH: '',
-    NGINX_CWD: '',
-    AI_REPORTS_API_KEY: 'ai-report-2025-secret-key-9527' // AI日报API密钥
+    PORT: process.env.PORT || 3001,
+    DB_FILE: process.env.DB_FILE || 'database.db',// 数据库文件名
+    JWT_SECRET: process.env.JWT_SECRET || 'default-weak-secret-for-initial-login-please-change-me',// 默认JWT密钥
+    BACKEND_URL: process.env.BACKEND_URL || '',
+    CLOUDFLARE_SITE_KEY: process.env.CLOUDFLARE_SITE_KEY || '',
+    CLOUDFLARE_SECRET_KEY: process.env.CLOUDFLARE_SECRET_KEY || '',
+    NGINX_ERROR_LOG_PATH: process.env.NGINX_ERROR_LOG_PATH || '/nginx/logs/error.log',
+    NGINX_BLOCK_IP_FILE: process.env.NGINX_BLOCK_IP_FILE || '/nginx/conf/blocked_ips.conf',
+    NGINX_EXE_PATH: process.env.NGINX_EXE_PATH || '/usr/sbin/nginx',
+    NGINX_CWD: process.env.NGINX_CWD || '/nginx/conf',
+    AI_REPORTS_API_KEY: process.env.AI_REPORTS_API_KEY || 'ai-report-2025-secret-key-9527' // AI日报API密钥
 };
 
 // 从数据库加载配置的函数

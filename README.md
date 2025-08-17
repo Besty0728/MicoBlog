@@ -28,8 +28,21 @@
 - **富文本编辑器**: TinyMCE
 - **核心依赖**: `cors, bcrypt, jsonwebtoken, multer, chokidar, execa`
 
-## 🚀 部署流程 (Windows 环境)
-本指南主要针对 Windows 10/11 或 Windows Server 系统。
+## 🚀 部署方式选择
+
+### 🖥️ 传统 Windows 部署 (推荐新手)
+适用于 Windows 10/11 或 Windows Server 系统，直接在系统上运行 Node.js 和 Nginx。
+
+[📖 查看传统部署指南](#传统部署流程)
+
+### 🐳 Docker 容器化部署 (推荐生产环境)
+支持 Windows 和 Linux 系统，使用 Docker 容器化技术，更易于管理和扩展。
+
+[![Docker 部署](https://img.shields.io/badge/Docker-部署指南-2496ED?style=for-the-badge&logo=docker)](./docker-deploy/README.md)
+
+---
+
+## 🖥️ 传统部署流程 (Windows 环境)
 
 ### 1. 环境准备
 在开始之前，请确保你已经安装了以下软件：
